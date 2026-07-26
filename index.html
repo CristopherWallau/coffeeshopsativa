@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Sativa Coffee Shop | Catálogo Digital</title>
+
+<!-- Tailwind CSS via CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            50:  '#f4f1ec',
+            100: '#e6ded0',
+            200: '#d0c0a3',
+            400: '#a9814b',
+            500: '#8a6636',
+            600: '#6f5029',
+            700: '#54391c',
+            800: '#3b2712',
+            900: '#241608',
+          },
+          accent: {
+            500: '#25D366', // verde WhatsApp
+            600: '#1ebe57',
+          }
+        },
+        fontFamily: {
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+        }
+      }
+    }
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  /* Estilos que o Tailwind (via utilitários) não cobre com elegância */
+  html, body { font-family: 'Inter', system-ui, sans-serif; }
+
+  /* Esconde a barra de rolagem dos filtros mantendo a rolagem funcional (estilo Vendizap) */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Transição do offcanvas do carrinho */
+  #cart-drawer {
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(100%);
+  }
+  #cart-drawer.open { transform: translateX(0); }
+
+  #cart-overlay {
+    transition: opacity 0.3s ease-in-out;
+    opacity: 0;
+    pointer-events: none;
+  }
+  #cart-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Animação leve do badge do carrinho ao atualizar */
+  @keyframes pop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
+  .badge-pop { animation: pop 0.25s ease-in-out; }
+
+  /* Toast de feedback "produto adicionado" */
+  #toast {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+  }
+  #toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Efeito sutil de clique nos cards */
+  .card-add-btn:active { transform: scale(0.96); }
+</style>
+</head>
+
+<body class="bg-brand-50 text-brand-900 min-h-screen pb-10">
+
+  <!-- ======================= HEADER FIXO ======================= -->
+  <header class="fixed top-0 inset-x-0 z-30 bg-brand-800 text-white shadow-md">
+    <div class="max-w-2xl mx-auto flex items-center justify-between px-4 py-3">
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-9 h-9 shrink-0 rounded-full bg-brand-500 flex items-center justify-center font-bold text-lg">
+          <!-- Inicial do nome da loja, gerada dinamicamente via JS -->
+          <span id="store-initial">S</span>
+        </div>
+        <div class="min-w-0">
+          <h1 id="store-name" class="font-bold text-base leading-tight truncate">Carregando...</h1>
+          <p class="text-[11px] text-brand-100/80 leading-tight">Catálogo digital</p>
+        </div>
+      </div>
+
+      <!-- Botão do carrinho com badge numérico -->
+      <button id="cart-btn" aria-label="Abrir carrinho" class="relative w-10 h-10 flex items-center justify-center rounded-full bg-brand-700 hover:bg-brand-600 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <span id="cart-badge"
+          class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-accent-500 text-white text-[10px] font-bold flex items-center justify-center hidden">
+          0
+        </span>
+      </button>
+    </div>
+
+    <!-- ================= FILTROS (scroll horizontal) ================= -->
+    <nav aria-label="Filtro de categorias" class="border-t border-brand-700/60">
+      <div id="category-filters" class="max-w-2xl mx-auto flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar">
+        <!-- Botões de categoria injetados via JS -->
+      </div>
+    </nav>
+  </header>
+
+  <!-- Espaçador para compensar o header fixo (altura aproximada: logo + filtros) -->
+  <div class="h-[112px]"></div>
+
+  <!-- ======================= CONTEÚDO PRINCIPAL ======================= -->
+  <main class="max-w-2xl mx-auto px-4 pt-4">
+    <section id="products-grid" class="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-live="polite">
+      <!-- Cards de produto injetados via JS -->
+    </section>
+
+    <p id="empty-state" class="hidden text-center text-brand-500 py-16">
+      Nenhum produto encontrado nesta categoria.
+    </p>
+  </main>
+
+  <!-- ======================= OFFCANVAS DO CARRINHO ======================= -->
+  <div id="cart-overlay" class="fixed inset-0 bg-black/50 z-40"></div>
+
+  <aside id="cart-drawer"
+    class="fixed top-0 right-0 z-50 w-full max-w-sm h-full bg-white shadow-2xl flex flex-col"
+    aria-label="Carrinho de compras">
+
+    <!-- Cabeçalho do carrinho -->
+    <div class="flex items-center justify-between px-4 py-4 border-b border-brand-100">
+      <h2 class="font-bold text-lg text-brand-900">Meu Carrinho</h2>
+      <button id="cart-close-btn" aria-label="Fechar carrinho" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-brand-50">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Lista de itens do carrinho -->
+    <div id="cart-items" class="flex-1 overflow-y-auto px-4 py-3 divide-y divide-brand-100">
+      <!-- Itens injetados via JS -->
+    </div>
+
+    <!-- Estado vazio do carrinho -->
+    <div id="cart-empty" class="flex-1 flex flex-col items-center justify-center text-center px-6 text-brand-400 hidden">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-14 h-14 mb-3 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="21" r="1"></circle>
+        <circle cx="20" cy="21" r="1"></circle>
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+      </svg>
+      <p class="font-medium">Seu carrinho está vazio</p>
+      <p class="text-sm mt-1">Adicione produtos para começar seu pedido.</p>
+    </div>
+
+    <!-- Rodapé com subtotal e CTA -->
+    <div class="border-t border-brand-100 px-4 py-4 bg-white">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-brand-500 font-medium">Subtotal</span>
+        <span id="cart-subtotal" class="text-xl font-extrabold text-brand-900">R$ 0,00</span>
+      </div>
+      <button id="checkout-btn"
+        class="w-full flex items-center justify-center gap-2 bg-accent-500 hover:bg-accent-600 disabled:opacity-40 disabled:pointer-events-none text-white font-bold py-3 rounded-xl transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20.52 3.48A11.86 11.86 0 0 0 12.04 0C5.5 0 .2 5.3.2 11.84c0 2.09.55 4.13 1.6 5.93L0 24l6.4-1.68a11.8 11.8 0 0 0 5.63 1.44h.01c6.53 0 11.84-5.3 11.84-11.84 0-3.16-1.23-6.13-3.36-8.44ZM12.04 21.6a9.7 9.7 0 0 1-4.95-1.36l-.35-.21-3.7.97.99-3.6-.23-.37a9.75 9.75 0 0 1-1.5-5.2c0-5.39 4.39-9.78 9.79-9.78 2.61 0 5.07 1.02 6.92 2.87a9.7 9.7 0 0 1 2.86 6.91c0 5.4-4.39 9.79-9.83 9.79Zm5.36-7.34c-.29-.15-1.72-.85-1.99-.95-.27-.1-.46-.15-.66.15-.2.29-.76.94-.93 1.14-.17.19-.34.22-.63.07-.29-.15-1.24-.46-2.36-1.46-.87-.78-1.46-1.74-1.63-2.03-.17-.29-.02-.45.13-.6.13-.13.29-.34.44-.51.15-.17.19-.29.29-.49.1-.19.05-.36-.02-.51-.07-.15-.66-1.59-.9-2.18-.24-.57-.48-.49-.66-.5-.17-.01-.36-.01-.56-.01-.19 0-.51.07-.78.36-.27.29-1.02 1-1.02 2.44s1.05 2.83 1.19 3.03c.15.19 2.06 3.15 5 4.42.7.3 1.25.48 1.68.61.7.22 1.34.19 1.84.12.56-.08 1.72-.7 1.96-1.38.24-.68.24-1.26.17-1.38-.07-.12-.26-.19-.55-.34Z"/>
+        </svg>
+        <span id="checkout-btn-text">Finalizar no WhatsApp</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Toast simples de feedback -->
+  <div id="toast"
+    class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] bg-brand-900 text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-lg whitespace-nowrap">
+    Produto adicionado!
+  </div>
+
+  <!-- Template (HTML5 semântico) reutilizado pelo JS para renderizar cada card de produto -->
+  <template id="product-card-template">
+    <article class="bg-white rounded-2xl shadow-sm border border-brand-100 overflow-hidden flex flex-col">
+      <div class="aspect-square w-full bg-brand-100 overflow-hidden">
+        <img class="product-img w-full h-full object-cover" src="" alt="" loading="lazy">
+      </div>
+      <div class="p-3 flex flex-col flex-1">
+        <h3 class="product-name font-semibold text-sm text-brand-900 leading-tight line-clamp-2"></h3>
+        <p class="product-desc text-xs text-brand-500 mt-1 line-clamp-2 flex-1"></p>
+        <div class="flex items-center justify-between mt-3">
+          <span class="product-price font-extrabold text-brand-700 text-sm"></span>
+          <button type="button" class="card-add-btn w-8 h-8 flex items-center justify-center rounded-full bg-brand-700 hover:bg-brand-600 text-white transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <!-- Template reutilizado pelo JS para renderizar cada item do carrinho -->
+  <template id="cart-item-template">
+    <div class="flex items-center gap-3 py-3">
+      <img class="cart-item-img w-14 h-14 rounded-lg object-cover bg-brand-100 shrink-0" src="" alt="">
+      <div class="flex-1 min-w-0">
+        <p class="cart-item-name font-semibold text-sm text-brand-900 truncate"></p>
+        <p class="cart-item-price text-xs text-brand-500 mt-0.5"></p>
+        <div class="flex items-center gap-2 mt-2">
+          <button type="button" class="qty-decrease w-6 h-6 flex items-center justify-center rounded-full border border-brand-200 text-brand-700 hover:bg-brand-50">−</button>
+          <span class="cart-item-qty text-sm font-medium w-5 text-center"></span>
+          <button type="button" class="qty-increase w-6 h-6 flex items-center justify-center rounded-full border border-brand-200 text-brand-700 hover:bg-brand-50">+</button>
+        </div>
+      </div>
+      <button type="button" class="cart-item-remove text-brand-300 hover:text-red-500 p-1" aria-label="Remover item">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+      </button>
+    </div>
+  </template>
+
+<script>
+/* ==========================================================================
+   SATIVA COFFEE SHOP — CATÁLOGO DIGITAL (SPA)
+   Arquitetura: HTML5 semântico + Tailwind (CDN) + Vanilla JS
+   Organização do script (separação de responsabilidades):
+     1. DB (mock data)
+     2. STATE (estado da aplicação: filtro ativo + carrinho)
+     3. UTILS (formatação, helpers puros)
+     4. DOM (referências aos elementos)
+     5. RENDER (funções responsáveis apenas por desenhar a UI a partir do estado)
+     6. CART (regras de negócio do carrinho: add/remove/update)
+     7. WHATSAPP (montagem da mensagem e redirecionamento)
+     8. EVENTS (listeners / delegação de eventos)
+     9. INIT (bootstrap da aplicação)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. DB — Base de dados mockada (mesma estrutura especificada, com o nome
+      da loja atualizado para Sativa Coffee Shop)
+   -------------------------------------------------------------------------- */
+const DB = {
+  "storeInfo": {
+    "name": "Sativa Coffee Shop",
+    "whatsappNumber": "5551999999999",
+    "currencySymbol": "R$"
+  },
+  "categories": [
+    { "id": "cat_1", "slug": "cafes", "name": "Cafés Especiais" },
+    { "id": "cat_2", "slug": "tabacaria", "name": "Tabacaria" },
+    { "id": "cat_3", "slug": "headshop", "name": "Headshop" },
+    { "id": "cat_4", "slug": "comidinhas", "name": "Para Comer" }
+  ],
+  "products": [
+    { "id": "prod_001", "categoryId": "cat_1", "name": "Espresso Duplo", "description": "Blend da casa 100% arábica.", "price": 12.50, "imageUrl": "https://via.placeholder.com/300x300?text=Espresso", "isActive": true },
+    { "id": "prod_002", "categoryId": "cat_2", "name": "Tabaco Orgânico 30g", "description": "Tabaco natural destalado.", "price": 28.00, "imageUrl": "https://via.placeholder.com/300x300?text=Tabaco", "isActive": true },
+    { "id": "prod_003", "categoryId": "cat_3", "name": "Seda King Size Slim", "description": "Combustão lenta. 32 folhas.", "price": 7.50, "imageUrl": "https://via.placeholder.com/300x300?text=Seda", "isActive": true },
+    { "id": "prod_004", "categoryId": "cat_1", "name": "Iced Latte", "description": "Espresso duplo com leite gelado.", "price": 16.00, "imageUrl": "https://via.placeholder.com/300x300?text=Iced+Latte", "isActive": false }
+  ]
+};
+
+/* --------------------------------------------------------------------------
+   2. STATE — Única fonte de verdade da aplicação
+   -------------------------------------------------------------------------- */
+const state = {
+  activeCategory: 'all', // slug da categoria selecionada nos filtros ('all' = todos)
+  cart: []               // array de { productId, name, price, imageUrl, quantity }
+};
+
+/* --------------------------------------------------------------------------
+   3. UTILS — Funções puras / auxiliares
+   -------------------------------------------------------------------------- */
+const Utils = {
+  /**
+   * Formata um número para moeda BRL usando Intl.NumberFormat,
+   * sem alterar o valor numérico original usado nos cálculos.
+   */
+  formatCurrency(value) {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  },
+
+  /** Busca um produto pelo id no DB */
+  getProductById(productId) {
+    return DB.products.find(p => p.id === productId);
+  },
+
+  /** Retorna a lista de produtos ativos filtrados pela categoria selecionada */
+  getVisibleProducts() {
+    return DB.products.filter(product => {
+      const isActive = product.isActive === true; // Requisito 2: filtrar apenas ativos
+      const matchesCategory =
+        state.activeCategory === 'all' ||
+        DB.categories.find(c => c.id === product.categoryId)?.slug === state.activeCategory;
+      return isActive && matchesCategory;
+    });
+  }
+};
+
+/* --------------------------------------------------------------------------
+   4. DOM — Referências centralizadas dos elementos usados no script
+   -------------------------------------------------------------------------- */
+const DOM = {
+  storeName: document.getElementById('store-name'),
+  storeInitial: document.getElementById('store-initial'),
+  categoryFilters: document.getElementById('category-filters'),
+  productsGrid: document.getElementById('products-grid'),
+  emptyState: document.getElementById('empty-state'),
+
+  cartBtn: document.getElementById('cart-btn'),
+  cartCloseBtn: document.getElementById('cart-close-btn'),
+  cartOverlay: document.getElementById('cart-overlay'),
+  cartDrawer: document.getElementById('cart-drawer'),
+  cartBadge: document.getElementById('cart-badge'),
+  cartItems: document.getElementById('cart-items'),
+  cartEmpty: document.getElementById('cart-empty'),
+  cartSubtotal: document.getElementById('cart-subtotal'),
+  checkoutBtn: document.getElementById('checkout-btn'),
+
+  toast: document.getElementById('toast'),
+
+  productCardTemplate: document.getElementById('product-card-template'),
+  cartItemTemplate: document.getElementById('cart-item-template'),
+};
+
+/* --------------------------------------------------------------------------
+   5. RENDER — Funções responsáveis apenas por "desenhar" o estado na tela
+   -------------------------------------------------------------------------- */
+const Render = {
+
+  /** Renderiza o nome da loja no header a partir do storeInfo */
+  storeHeader() {
+    DOM.storeName.textContent = DB.storeInfo.name;
+    DOM.storeInitial.textContent = DB.storeInfo.name.charAt(0).toUpperCase();
+    document.title = `${DB.storeInfo.name} | Catálogo Digital`;
+  },
+
+  /** Gera os botões de filtro a partir de categories, incluindo o botão "Todos" */
+  categoryFilters() {
+    // Limpa o container antes de renderizar
+    DOM.categoryFilters.innerHTML = '';
+
+    const buildButton = (slug, label) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.slug = slug;
+      btn.textContent = label;
+      btn.className = Render._filterButtonClasses(slug === state.activeCategory);
+      return btn;
+    };
+
+    // Botão padrão "Todos"
+    DOM.categoryFilters.appendChild(buildButton('all', 'Todos'));
+
+    // Demais categorias vindas do JSON
+    DB.categories.forEach(category => {
+      DOM.categoryFilters.appendChild(buildButton(category.slug, category.name));
+    });
+  },
+
+  /** Retorna as classes Tailwind do botão de filtro conforme está ativo ou não */
+  _filterButtonClasses(isActive) {
+    const base = 'shrink-0 whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium border transition-colors';
+    return isActive
+      ? `${base} bg-brand-500 text-white border-brand-500`
+      : `${base} bg-transparent text-brand-100 border-brand-600 hover:bg-brand-700`;
+  },
+
+  /** Atualiza apenas o estado visual (destaque) dos botões de filtro, sem re-renderizar tudo */
+  highlightActiveFilter() {
+    DOM.categoryFilters.querySelectorAll('button').forEach(btn => {
+      const isActive = btn.dataset.slug === state.activeCategory;
+      btn.className = Render._filterButtonClasses(isActive);
+    });
+  },
+
+  /** Renderiza os cards de produto na grid principal, usando o <template> do HTML */
+  productsGrid() {
+    const products = Utils.getVisibleProducts();
+    DOM.productsGrid.innerHTML = '';
+
+    // Estado vazio (nenhum produto ativo na categoria selecionada)
+    DOM.emptyState.classList.toggle('hidden', products.length > 0);
+
+    products.forEach(product => {
+      const node = DOM.productCardTemplate.content.cloneNode(true);
+      const img = node.querySelector('.product-img');
+      const name = node.querySelector('.product-name');
+      const desc = node.querySelector('.product-desc');
+      const price = node.querySelector('.product-price');
+      const addBtn = node.querySelector('.card-add-btn');
+
+      img.src = product.imageUrl;
+      img.alt = product.name;
+      name.textContent = product.name;
+      desc.textContent = product.description;
+      price.textContent = Utils.formatCurrency(product.price);
+
+      // Guarda o id do produto no botão para uso na delegação de eventos
+      addBtn.dataset.productId = product.id;
+
+      DOM.productsGrid.appendChild(node);
+    });
+  },
+
+  /** Renderiza a lista de itens dentro do carrinho (offcanvas) */
+  cartItems() {
+    DOM.cartItems.innerHTML = '';
+
+    const hasItems = state.cart.length > 0;
+    DOM.cartEmpty.classList.toggle('hidden', hasItems);
+    DOM.cartItems.classList.toggle('hidden', !hasItems);
+    DOM.checkoutBtn.disabled = !hasItems;
+
+    state.cart.forEach(item => {
+      const node = DOM.cartItemTemplate.content.cloneNode(true);
+      const img = node.querySelector('.cart-item-img');
+      const name = node.querySelector('.cart-item-name');
+      const price = node.querySelector('.cart-item-price');
+      const qty = node.querySelector('.cart-item-qty');
+      const decreaseBtn = node.querySelector('.qty-decrease');
+      const increaseBtn = node.querySelector('.qty-increase');
+      const removeBtn = node.querySelector('.cart-item-remove');
+
+      img.src = item.imageUrl;
+      img.alt = item.name;
+      name.textContent = item.name;
+      price.textContent = `${Utils.formatCurrency(item.price)} un.`;
+      qty.textContent = item.quantity;
+
+      // Cada controle guarda o productId para saber sobre qual item agir
+      [decreaseBtn, increaseBtn, removeBtn].forEach(btn => {
+        btn.dataset.productId = item.productId;
+      });
+
+      DOM.cartItems.appendChild(node);
+    });
+  },
+
+  /** Atualiza o badge numérico do ícone de carrinho no header */
+  cartBadge() {
+    const totalQty = state.cart.reduce((sum, item) => sum + item.quantity, 0);
+    DOM.cartBadge.textContent = totalQty;
+    DOM.cartBadge.classList.toggle('hidden', totalQty === 0);
+
+    // Pequena animação de "pop" ao atualizar a quantidade
+    DOM.cartBadge.classList.remove('badge-pop');
+    // Força reflow para permitir reiniciar a animação em cliques consecutivos
+    void DOM.cartBadge.offsetWidth;
+    DOM.cartBadge.classList.add('badge-pop');
+  },
+
+  /** Atualiza o subtotal exibido no rodapé do carrinho */
+  cartSubtotal() {
+    const subtotal = state.cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    DOM.cartSubtotal.textContent = Utils.formatCurrency(subtotal);
+  },
+
+  /** Renderiza tudo relacionado ao carrinho de uma vez (evita repetição de chamadas) */
+  cart() {
+    Render.cartItems();
+    Render.cartBadge();
+    Render.cartSubtotal();
+  },
+
+  /** Exibe um toast simples de feedback por ~1.6s */
+  toast(message) {
+    DOM.toast.textContent = message;
+    DOM.toast.classList.add('show');
+    clearTimeout(Render._toastTimeout);
+    Render._toastTimeout = setTimeout(() => {
+      DOM.toast.classList.remove('show');
+    }, 1600);
+  },
+  _toastTimeout: null,
+};
+
+/* --------------------------------------------------------------------------
+   6. CART — Regras de negócio do carrinho (estado + persistência em memória)
+   -------------------------------------------------------------------------- */
+const Cart = {
+
+  /** Adiciona um produto ao carrinho (ou incrementa a quantidade se já existir) */
+  addItem(productId) {
+    const product = Utils.getProductById(productId);
+    if (!product) return;
+
+    const existingItem = state.cart.find(item => item.productId === productId);
+
+    if (existingItem) {
+      existingItem.quantity += 1;
+    } else {
+      state.cart.push({
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        imageUrl: product.imageUrl,
+        quantity: 1
+      });
+    }
+
+    Render.cart();
+    Render.toast(`${product.name} adicionado!`);
+  },
+
+  /** Incrementa a quantidade de um item já existente no carrinho */
+  increaseQuantity(productId) {
+    const item = state.cart.find(i => i.productId === productId);
+    if (!item) return;
+    item.quantity += 1;
+    Render.cart();
+  },
+
+  /** Decrementa a quantidade; remove o item automaticamente se chegar a 0 */
+  decreaseQuantity(productId) {
+    const item = state.cart.find(i => i.productId === productId);
+    if (!item) return;
+
+    item.quantity -= 1;
+    if (item.quantity <= 0) {
+      Cart.removeItem(productId);
+      return;
+    }
+    Render.cart();
+  },
+
+  /** Remove completamente um item do carrinho */
+  removeItem(productId) {
+    state.cart = state.cart.filter(i => i.productId !== productId);
+    Render.cart();
+  },
+
+  /** Calcula o subtotal (soma de price * quantity) */
+  getSubtotal() {
+    return state.cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  },
+
+  /** Abre a gaveta lateral do carrinho */
+  open() {
+    DOM.cartDrawer.classList.add('open');
+    DOM.cartOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden'; // trava o scroll do body enquanto o drawer está aberto
+  },
+
+  /** Fecha a gaveta lateral do carrinho */
+  close() {
+    DOM.cartDrawer.classList.remove('open');
+    DOM.cartOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+};
+
+/* --------------------------------------------------------------------------
+   7. WHATSAPP — Monta a mensagem do pedido e redireciona para o WhatsApp
+   -------------------------------------------------------------------------- */
+const WhatsApp = {
+
+  /**
+   * Monta a string de texto do pedido no formato:
+   * "Olá! Gostaria de fazer o seguinte pedido:%0A%0A1x Espresso Duplo - R$ 12,50%0A%0ATotal: R$ 12,50"
+   * Usamos %0A manualmente (equivalente a \n encodado) para reproduzir exatamente o formato solicitado.
+   */
+  buildMessage() {
+    let message = 'Olá! Gostaria de fazer o seguinte pedido:%0A%0A';
+
+    const lines = state.cart.map(item => {
+      const lineTotal = Utils.formatCurrency(item.price * item.quantity);
+      return `${item.quantity}x ${item.name} - ${lineTotal}`;
+    });
+
+    message += lines.join('%0A');
+    message += `%0A%0ATotal: ${Utils.formatCurrency(Cart.getSubtotal())}`;
+
+    return message;
+  },
+
+  /** Abre o WhatsApp (Web/App) em nova aba com o número da loja e a mensagem pré-preenchida */
+  sendOrder() {
+    if (state.cart.length === 0) return;
+
+    const phone = DB.storeInfo.whatsappNumber;
+    const text = WhatsApp.buildMessage();
+    const url = `https://wa.me/${phone}?text=${text}`;
+
+    window.open(url, '_blank', 'noopener');
+  }
+};
+
+/* --------------------------------------------------------------------------
+   8. EVENTS — Listeners e delegação de eventos
+   -------------------------------------------------------------------------- */
+const Events = {
+  bindAll() {
+    // Abrir/fechar carrinho
+    DOM.cartBtn.addEventListener('click', Cart.open);
+    DOM.cartCloseBtn.addEventListener('click', Cart.close);
+    DOM.cartOverlay.addEventListener('click', Cart.close);
+
+    // Delegação de evento nos filtros de categoria (evita bind individual por botão)
+    DOM.categoryFilters.addEventListener('click', (event) => {
+      const btn = event.target.closest('button[data-slug]');
+      if (!btn) return;
+
+      state.activeCategory = btn.dataset.slug;
+      Render.highlightActiveFilter();
+      Render.productsGrid();
+    });
+
+    // Delegação de evento nos cards de produto (botão "Adicionar")
+    DOM.productsGrid.addEventListener('click', (event) => {
+      const btn = event.target.closest('.card-add-btn');
+      if (!btn) return;
+      Cart.addItem(btn.dataset.productId);
+    });
+
+    // Delegação de evento dentro do carrinho (aumentar / diminuir / remover)
+    DOM.cartItems.addEventListener('click', (event) => {
+      const increaseBtn = event.target.closest('.qty-increase');
+      const decreaseBtn = event.target.closest('.qty-decrease');
+      const removeBtn = event.target.closest('.cart-item-remove');
+
+      if (increaseBtn) Cart.increaseQuantity(increaseBtn.dataset.productId);
+      if (decreaseBtn) Cart.decreaseQuantity(decreaseBtn.dataset.productId);
+      if (removeBtn) Cart.removeItem(removeBtn.dataset.productId);
+    });
+
+    // Finalizar pedido via WhatsApp
+    DOM.checkoutBtn.addEventListener('click', WhatsApp.sendOrder);
+
+    // Fecha o carrinho ao pressionar ESC (acessibilidade)
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') Cart.close();
+    });
+  }
+};
+
+/* --------------------------------------------------------------------------
+   9. INIT — Bootstrap da aplicação
+   -------------------------------------------------------------------------- */
+function init() {
+  Render.storeHeader();
+  Render.categoryFilters();
+  Render.productsGrid();
+  Render.cart();
+  Events.bindAll();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
