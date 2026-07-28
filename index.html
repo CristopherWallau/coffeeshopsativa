@@ -131,13 +131,31 @@
 
   <!-- ======================= CONTEÚDO PRINCIPAL ======================= -->
   <main class="max-w-2xl mx-auto px-4 pt-4">
-    <section id="products-grid" class="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-live="polite">
-      <!-- Cards de produto injetados via JS -->
-    </section>
 
-    <p id="empty-state" class="hidden text-center text-brand-500 py-16">
-      Nenhum produto encontrado nesta categoria.
-    </p>
+    <!-- Estado de carregamento: exibido enquanto as duas chamadas à API (Categorias + Catálogo) não retornam -->
+    <div id="loading-state" class="flex flex-col items-center justify-center gap-3 py-24 text-brand-500">
+      <svg class="animate-spin h-8 w-8 text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+      </svg>
+      <p class="text-sm font-medium">Carregando catálogo...</p>
+    </div>
+
+    <!-- Estado de erro: exibido caso alguma das chamadas à API falhe -->
+    <div id="error-state" class="hidden flex-col items-center justify-center gap-2 py-24 text-center text-red-500">
+      <p id="error-message" class="text-sm font-medium">Não foi possível carregar o catálogo. Tente novamente mais tarde.</p>
+    </div>
+
+    <!-- Conteúdo real do catálogo: fica oculto até as duas requisições terminarem com sucesso -->
+    <div id="catalog-content" class="hidden">
+      <section id="products-grid" class="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-live="polite">
+        <!-- Cards de produto injetados via JS -->
+      </section>
+
+      <p id="empty-state" class="hidden text-center text-brand-500 py-16">
+        Nenhum produto encontrado nesta categoria.
+      </p>
+    </div>
   </main>
 
   <!-- ======================= OFFCANVAS DO CARRINHO ======================= -->
@@ -245,20 +263,23 @@
    SATIVA COFFEE SHOP — CATÁLOGO DIGITAL (SPA)
    Arquitetura: HTML5 semântico + Tailwind (CDN) + Vanilla JS
    Organização do script (separação de responsabilidades):
-     1. DB (mock data)
+     1. DB (estado dos dados: storeInfo fixo + categories/products vindos da API)
+        1.1 API    — chamadas fetch ao SheetDB (Categorias e Catalogo)
+        1.2 MAPPER — normaliza as linhas brutas da planilha para o formato da UI
      2. STATE (estado da aplicação: filtro ativo + carrinho)
-     3. UTILS (formatação, helpers puros)
+     3. UTILS (formatação, parsing de preço/boolean, helpers puros)
      4. DOM (referências aos elementos)
      5. RENDER (funções responsáveis apenas por desenhar a UI a partir do estado)
      6. CART (regras de negócio do carrinho: add/remove/update)
      7. WHATSAPP (montagem da mensagem e redirecionamento)
      8. EVENTS (listeners / delegação de eventos)
-     9. INIT (bootstrap da aplicação)
+     9. INIT (bootstrap assíncrono: fetch → loading → render)
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   1. DB — Base de dados mockada (mesma estrutura especificada, com o nome
-      da loja atualizado para Sativa Coffee Shop)
+   1. DB — Agora é um estado "vivo": storeInfo continua fixo (dados da loja
+      não vêm da planilha), mas categories/products começam vazios e são
+      preenchidos em runtime a partir da API do SheetDB (ver módulo API/INIT).
    -------------------------------------------------------------------------- */
 const DB = {
   "storeInfo": {
@@ -266,18 +287,82 @@ const DB = {
     "whatsappNumber": "5551999999999",
     "currencySymbol": "R$"
   },
-  "categories": [
-    { "id": "cat_1", "slug": "cafes", "name": "Cafés Especiais" },
-    { "id": "cat_2", "slug": "tabacaria", "name": "Tabacaria" },
-    { "id": "cat_3", "slug": "headshop", "name": "Headshop" },
-    { "id": "cat_4", "slug": "comidinhas", "name": "Para Comer" }
-  ],
-  "products": [
-    { "id": "prod_001", "categoryId": "cat_1", "name": "Espresso Duplo", "description": "Blend da casa 100% arábica.", "price": 12.50, "imageUrl": "https://via.placeholder.com/300x300?text=Espresso", "isActive": true },
-    { "id": "prod_002", "categoryId": "cat_2", "name": "Tabaco Orgânico 30g", "description": "Tabaco natural destalado.", "price": 28.00, "imageUrl": "https://via.placeholder.com/300x300?text=Tabaco", "isActive": true },
-    { "id": "prod_003", "categoryId": "cat_3", "name": "Seda King Size Slim", "description": "Combustão lenta. 32 folhas.", "price": 7.50, "imageUrl": "https://via.placeholder.com/300x300?text=Seda", "isActive": true },
-    { "id": "prod_004", "categoryId": "cat_1", "name": "Iced Latte", "description": "Espresso duplo com leite gelado.", "price": 16.00, "imageUrl": "https://via.placeholder.com/300x300?text=Iced+Latte", "isActive": false }
-  ]
+  "categories": [], // preenchido após o fetch em ?sheet=Categorias
+  "products": []    // preenchido após o fetch em ?sheet=Catalogo
+};
+
+/* --------------------------------------------------------------------------
+   1.1 API — Configuração e chamadas à planilha (SheetDB / Google Sheets)
+   -------------------------------------------------------------------------- */
+const API_BASE_URL = 'https://sheetdb.io/api/v1/275gm74y55ago';
+
+const Api = {
+  /** Busca os dados brutos da aba "Categorias" */
+  async fetchCategories() {
+    const response = await fetch(`${API_BASE_URL}?sheet=Categorias`);
+    if (!response.ok) {
+      throw new Error(`Falha ao buscar categorias (status ${response.status})`);
+    }
+    return response.json();
+  },
+
+  /** Busca os dados brutos da aba "Catalogo" */
+  async fetchProducts() {
+    const response = await fetch(`${API_BASE_URL}?sheet=Catalogo`);
+    if (!response.ok) {
+      throw new Error(`Falha ao buscar produtos (status ${response.status})`);
+    }
+    return response.json();
+  },
+
+  /**
+   * Dispara as duas requisições em paralelo com Promise.all, já que uma não
+   * depende da outra — reduz o tempo total de carregamento pela metade.
+   */
+  async fetchAll() {
+    const [categoriesRaw, productsRaw] = await Promise.all([
+      Api.fetchCategories(),
+      Api.fetchProducts()
+    ]);
+    return { categoriesRaw, productsRaw };
+  }
+};
+
+/* --------------------------------------------------------------------------
+   1.2 MAPPER — Converte as linhas brutas da planilha (tudo vem como string)
+       para o formato que o restante da aplicação espera.
+       IMPORTANTE: os nomes abaixo (id, slug, name, categoryId, description,
+       price, imageUrl, isActive) precisam bater exatamente com os títulos
+       das colunas nas abas "Categorias" e "Catalogo" da planilha (o SheetDB
+       usa o cabeçalho da coluna como chave do JSON, e é case-sensitive).
+       Ajuste os nomes de campo aqui caso suas colunas tenham nomes diferentes.
+   -------------------------------------------------------------------------- */
+const Mapper = {
+  /** Normaliza uma linha da aba "Categorias" */
+  toCategory(row) {
+    return {
+      id: row.id,
+      slug: row.slug,
+      name: row.name
+    };
+  },
+
+  /** Normaliza uma linha da aba "Catalogo", já tratando preço, descrição e isActive */
+  toProduct(row) {
+    return {
+      id: row.id,
+      categoryId: row.categoryId,
+      name: row.name,
+      // Descrição opcional: string vazia, undefined ou null viram null,
+      // para que o Render saiba que não deve desenhar a tag <p> no card.
+      description: (row.description && String(row.description).trim() !== '')
+        ? String(row.description).trim()
+        : null,
+      price: Utils.parsePrice(row.price),
+      imageUrl: row.imageUrl,
+      isActive: Utils.parseBoolean(row.isActive)
+    };
+  }
 };
 
 /* --------------------------------------------------------------------------
@@ -301,6 +386,35 @@ const Utils = {
       style: 'currency',
       currency: 'BRL'
     }).format(value);
+  },
+
+  /**
+   * Converte o preço vindo da planilha (string no formato brasileiro, ex: "12,50")
+   * para um Float válido (ex: 12.5), trocando a vírgula por ponto antes do parseFloat.
+   * Isso é essencial para o subtotal do carrinho não quebrar (NaN).
+   */
+  parsePrice(rawPrice) {
+    if (typeof rawPrice === 'number') return rawPrice; // já veio numérico, nada a fazer
+    if (typeof rawPrice !== 'string' || rawPrice.trim() === '') return 0;
+
+    const normalized = rawPrice.trim().replace(',', '.');
+    const parsed = parseFloat(normalized);
+
+    return Number.isNaN(parsed) ? 0 : parsed;
+  },
+
+  /**
+   * Converte o valor de "isActive" vindo da planilha (texto) para boolean.
+   * Aceita variações comuns de preenchimento manual: TRUE/FALSE, true/false,
+   * 1/0, sim/não — para não depender de a planilha usar um checkbox nativo.
+   */
+  parseBoolean(rawValue) {
+    if (typeof rawValue === 'boolean') return rawValue;
+    if (typeof rawValue === 'number') return rawValue === 1;
+    if (typeof rawValue !== 'string') return false;
+
+    const normalized = rawValue.trim().toLowerCase();
+    return ['true', '1', 'sim', 'yes', 'verdadeiro', 'ativo'].includes(normalized);
   },
 
   /** Busca um produto pelo id no DB */
@@ -327,6 +441,12 @@ const DOM = {
   storeName: document.getElementById('store-name'),
   storeInitial: document.getElementById('store-initial'),
   categoryFilters: document.getElementById('category-filters'),
+
+  loadingState: document.getElementById('loading-state'),
+  errorState: document.getElementById('error-state'),
+  errorMessage: document.getElementById('error-message'),
+  catalogContent: document.getElementById('catalog-content'),
+
   productsGrid: document.getElementById('products-grid'),
   emptyState: document.getElementById('empty-state'),
 
@@ -381,6 +501,34 @@ const Render = {
     });
   },
 
+  /** Estado 1: mostra o spinner de "Carregando catálogo..." e esconde os demais estados */
+  showLoading() {
+    DOM.loadingState.classList.remove('hidden');
+    DOM.loadingState.classList.add('flex');
+    DOM.errorState.classList.add('hidden');
+    DOM.errorState.classList.remove('flex');
+    DOM.catalogContent.classList.add('hidden');
+  },
+
+  /** Estado 2: as duas chamadas à API falharam ou uma delas deu erro */
+  showError(message) {
+    DOM.loadingState.classList.add('hidden');
+    DOM.loadingState.classList.remove('flex');
+    DOM.errorState.classList.remove('hidden');
+    DOM.errorState.classList.add('flex');
+    DOM.catalogContent.classList.add('hidden');
+    if (message) DOM.errorMessage.textContent = message;
+  },
+
+  /** Estado 3: as duas chamadas retornaram com sucesso, catálogo pronto para ser exibido */
+  showContent() {
+    DOM.loadingState.classList.add('hidden');
+    DOM.loadingState.classList.remove('flex');
+    DOM.errorState.classList.add('hidden');
+    DOM.errorState.classList.remove('flex');
+    DOM.catalogContent.classList.remove('hidden');
+  },
+
   /** Retorna as classes Tailwind do botão de filtro conforme está ativo ou não */
   _filterButtonClasses(isActive) {
     const base = 'shrink-0 whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium border transition-colors';
@@ -416,8 +564,15 @@ const Render = {
       img.src = product.imageUrl;
       img.alt = product.name;
       name.textContent = product.name;
-      desc.textContent = product.description;
       price.textContent = Utils.formatCurrency(product.price);
+
+      // Descrição opcional: se o produto não tiver descrição (coluna vazia/nula
+      // na planilha), removemos a tag <p> do card em vez de deixá-la vazia.
+      if (product.description) {
+        desc.textContent = product.description;
+      } else {
+        desc.remove();
+      }
 
       // Guarda o id do produto no botão para uso na delegação de eventos
       addBtn.dataset.productId = product.id;
@@ -660,12 +815,30 @@ const Events = {
 /* --------------------------------------------------------------------------
    9. INIT — Bootstrap da aplicação
    -------------------------------------------------------------------------- */
-function init() {
+async function init() {
+  // Dados fixos da loja (não vêm da planilha) e listeners podem ser montados de imediato
   Render.storeHeader();
-  Render.categoryFilters();
-  Render.productsGrid();
   Render.cart();
   Events.bindAll();
+
+  // Mostra o loading e só libera a tela quando as DUAS requisições retornarem
+  Render.showLoading();
+
+  try {
+    const { categoriesRaw, productsRaw } = await Api.fetchAll();
+
+    // Normaliza os dados brutos da planilha para o formato usado pela UI
+    DB.categories = categoriesRaw.map(Mapper.toCategory);
+    DB.products = productsRaw.map(Mapper.toProduct);
+
+    Render.categoryFilters();
+    Render.productsGrid();
+    Render.showContent();
+  } catch (error) {
+    // Loga o erro real no console para depuração, mas mostra mensagem amigável na tela
+    console.error('Erro ao carregar catálogo do SheetDB:', error);
+    Render.showError('Não foi possível carregar o catálogo. Verifique sua conexão e tente novamente.');
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
