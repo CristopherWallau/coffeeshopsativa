@@ -86,6 +86,13 @@
   }
 
   .card-add-btn:active { transform: scale(0.96); }
+
+  /* Botão flutuante do WhatsApp: leve pulso pra chamar atenção sem ser irritante */
+  @keyframes float-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.35); }
+    50%      { box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); }
+  }
+  #whatsapp-float-btn { animation: float-pulse 2.5s ease-in-out infinite; }
 </style>
 </head>
 
@@ -118,6 +125,37 @@
       </button>
     </div>
 
+    <!-- ================= BUSCA POR PRODUTO ================= -->
+    <div class="border-t border-brand-700/60">
+      <div class="max-w-7xl mx-auto px-4 md:px-8 py-2">
+        <div class="relative">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-200 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            id="search-input"
+            type="search"
+            inputmode="search"
+            placeholder="Buscar produto..."
+            aria-label="Buscar produto por nome"
+            class="w-full pl-9 pr-9 py-2 rounded-full bg-brand-700/60 text-white placeholder-brand-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 transition-shadow"
+          >
+          <button
+            id="search-clear-btn"
+            type="button"
+            aria-label="Limpar busca"
+            class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 items-center justify-center rounded-full text-brand-200 hover:text-white hover:bg-brand-600"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ================= FILTROS (scroll horizontal) ================= -->
     <nav aria-label="Filtro de categorias" class="border-t border-brand-700/60">
       <div id="category-filters" class="max-w-7xl mx-auto flex gap-2 px-4 py-3 md:px-8 overflow-x-auto no-scrollbar">
@@ -126,8 +164,10 @@
     </nav>
   </header>
 
-  <!-- Espaçador para compensar o header fixo (altura aproximada: logo + filtros) -->
-  <div class="h-[112px]"></div>
+  <!-- Espaçador para compensar o header fixo. A altura é calculada e sincronizada via
+       JS (Layout.syncHeaderSpacer), então não precisa ser ajustada manualmente aqui
+       mesmo se o header crescer (ex: filtros quebrando linha em telas menores). -->
+  <div id="header-spacer"></div>
 
   <!-- ======================= CONTEÚDO PRINCIPAL ======================= -->
   <main class="max-w-7xl mx-auto px-4 md:px-8 pt-4">
@@ -153,7 +193,7 @@
       </section>
 
       <p id="empty-state" class="hidden text-center text-brand-500 py-16">
-        Nenhum produto encontrado nesta categoria.
+        Nenhum produto encontrado.
       </p>
     </div>
   </main>
@@ -214,11 +254,27 @@
     Produto adicionado!
   </div>
 
+  <!-- Botão flutuante do WhatsApp: contato direto/dúvidas, independente do fluxo de checkout do carrinho -->
+  <a id="whatsapp-float-btn"
+     href="#"
+     target="_blank"
+     rel="noopener"
+     aria-label="Falar no WhatsApp"
+     class="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full bg-accent-500 hover:bg-accent-600 text-white flex items-center justify-center shadow-xl transition-transform hover:scale-105">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M20.52 3.48A11.86 11.86 0 0 0 12.04 0C5.5 0 .2 5.3.2 11.84c0 2.09.55 4.13 1.6 5.93L0 24l6.4-1.68a11.8 11.8 0 0 0 5.63 1.44h.01c6.53 0 11.84-5.3 11.84-11.84 0-3.16-1.23-6.13-3.36-8.44ZM12.04 21.6a9.7 9.7 0 0 1-4.95-1.36l-.35-.21-3.7.97.99-3.6-.23-.37a9.75 9.75 0 0 1-1.5-5.2c0-5.39 4.39-9.78 9.79-9.78 2.61 0 5.07 1.02 6.92 2.87a9.7 9.7 0 0 1 2.86 6.91c0 5.4-4.39 9.79-9.83 9.79Zm5.36-7.34c-.29-.15-1.72-.85-1.99-.95-.27-.1-.46-.15-.66.15-.2.29-.76.94-.93 1.14-.17.19-.34.22-.63.07-.29-.15-1.24-.46-2.36-1.46-.87-.78-1.46-1.74-1.63-2.03-.17-.29-.02-.45.13-.6.13-.13.29-.34.44-.51.15-.17.19-.29.29-.49.1-.19.05-.36-.02-.51-.07-.15-.66-1.59-.9-2.18-.24-.57-.48-.49-.66-.5-.17-.01-.36-.01-.56-.01-.19 0-.51.07-.78.36-.27.29-1.02 1-1.02 2.44s1.05 2.83 1.19 3.03c.15.19 2.06 3.15 5 4.42.7.3 1.25.48 1.68.61.7.22 1.34.19 1.84.12.56-.08 1.72-.7 1.96-1.38.24-.68.24-1.26.17-1.38-.07-.12-.26-.19-.55-.34Z"/>
+    </svg>
+  </a>
+
   <!-- Template (HTML5 semântico) reutilizado pelo JS para renderizar cada card de produto -->
   <template id="product-card-template">
     <article class="bg-white rounded-[24px] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-brand-100 overflow-hidden flex flex-col group">
-      <div class="aspect-square w-full bg-brand-100 overflow-hidden">
+      <div class="relative aspect-[4/5] w-full bg-brand-100 overflow-hidden">
         <img class="product-img w-full h-full object-cover" src="" alt="" loading="lazy">
+        <!-- Badge de quantidade: só aparece se o produto já estiver no carrinho -->
+        <span class="cart-qty-badge hidden absolute top-2 left-2 bg-accent-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-md">
+          0x no carrinho
+        </span>
       </div>
       <div class="p-3 flex flex-col flex-1">
         <h3 class="product-name font-semibold text-sm text-brand-900 leading-tight line-clamp-2"></h3>
@@ -266,14 +322,15 @@
      1. DB (estado dos dados: storeInfo fixo + categories/products vindos da API)
         1.1 API    — chamadas fetch ao SheetDB (Categorias e Catalogo)
         1.2 MAPPER — normaliza as linhas brutas da planilha para o formato da UI
-     2. STATE (estado da aplicação: filtro ativo + carrinho)
+     2. STATE (estado da aplicação: filtro ativo + busca + carrinho)
      3. UTILS (formatação, parsing de preço/boolean/imagem do Drive, helpers puros)
      4. DOM (referências aos elementos)
      5. RENDER (funções responsáveis apenas por desenhar a UI a partir do estado)
      6. CART (regras de negócio do carrinho: add/remove/update)
      7. WHATSAPP (montagem da mensagem e redirecionamento)
-     8. EVENTS (listeners / delegação de eventos)
-     9. INIT (bootstrap assíncrono: fetch → loading → render)
+     8. LAYOUT (ajustes de layout dependentes de medição do DOM, ex: spacer do header)
+     9. EVENTS (listeners / delegação de eventos)
+    10. INIT (bootstrap assíncrono: fetch → loading → render)
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -290,6 +347,22 @@ const DB = {
   "categories": [], // preenchido após o fetch em ?sheet=Categorias
   "products": []    // preenchido após o fetch em ?sheet=Catalogo
 };
+
+/**
+ * Imagem de fallback (data URI, 100% offline — nunca vai quebrar por conta
+ * própria) usada quando a foto do produto vinda do Google Drive falha ao
+ * carregar (arquivo sem permissão pública, ID inválido, linha vazia etc).
+ */
+const FALLBACK_IMAGE_URL = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+    <rect width="300" height="300" fill="#e1ede5"/>
+    <g fill="none" stroke="#759f84" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="60" y="90" width="180" height="130" rx="12"/>
+      <circle cx="110" cy="135" r="16"/>
+      <path d="M60 195l55-50 45 40 30-25 50 40"/>
+    </g>
+  </svg>
+`);
 
 /* --------------------------------------------------------------------------
    1.1 API — Configuração e chamadas à planilha (SheetDB / Google Sheets)
@@ -331,7 +404,7 @@ const Api = {
 /* --------------------------------------------------------------------------
    1.2 MAPPER — Converte as linhas brutas da planilha (tudo vem como string)
        para o formato que o restante da aplicação espera.
-       IMPORTANTE: os nomes abaixo (id, slug, name, categoryId, description,
+       IMPORTANTE: os nomes abaixo (id, slug, name, categoryid, description,
        price, imageUrl, isActive) precisam bater exatamente com os títulos
        das colunas nas abas "Categorias" e "Catalogo" da planilha (o SheetDB
        usa o cabeçalho da coluna como chave do JSON, e é case-sensitive).
@@ -358,7 +431,7 @@ const Mapper = {
         : null,
       price: Utils.parsePrice(row.price),
       imageUrl: Utils.parseDriveImageUrl(row.imageUrl),
-      // CORREÇÃO: Se a coluna isActive vier vazia ou não existir, assume como TRUE (ativo)
+      // Se a coluna isActive vier vazia ou não existir, assume como TRUE (ativo)
       isActive: (row.isActive === undefined || row.isActive === null || String(row.isActive).trim() === '') ? true : Utils.parseBoolean(row.isActive)
     };
   }
@@ -369,6 +442,7 @@ const Mapper = {
    -------------------------------------------------------------------------- */
 const state = {
   activeCategory: 'all', // slug da categoria selecionada nos filtros ('all' = todos)
+  searchQuery: '',       // texto digitado na busca (já normalizado em minúsculas)
   cart: []               // array de { productId, name, price, imageUrl, quantity }
 };
 
@@ -420,11 +494,8 @@ const Utils = {
    * Converte um link de compartilhamento do Google Drive (formatos:
    * "https://drive.google.com/open?id=ID" ou
    * "https://drive.google.com/file/d/ID/view") em uma URL direta de imagem,
-   * usando o endpoint de thumbnail do Drive: "https://drive.google.com/thumbnail?id=ID&sz=w1000".
-   * (O endpoint "uc?export=view" é bloqueado pelo navegador em tags <img> por
-   * CORB — Cross-Origin Read Blocking —, então usamos o thumbnail, que é
-   * servido com os headers corretos para embed. sz=w1000 pede a imagem em
-   * boa resolução, com até 1000px de largura.)
+   * usando o endpoint "https://lh3.googleusercontent.com/d/ID" (não sofre
+   * bloqueio de CORB em tags <img>, ao contrário do "uc?export=view").
    * Extrai o ID via Regex (padrão /file/d/ID/) com fallback via URLSearchParams
    * (padrão ?id=ID). Se a URL não for do Drive (ou já vier em outro formato,
    * como um placeholder), retorna a própria URL original sem modificar.
@@ -434,7 +505,6 @@ const Utils = {
     const url = rawUrl.trim();
     if (url === '') return '';
 
-    // Servidor oficial de imagens do Google (Bypassa o CORB 100%)
     const baseUrl = 'https://lh3.googleusercontent.com/d/';
 
     // Padrão 1: /file/d/ID
@@ -455,19 +525,32 @@ const Utils = {
     return url; // Se não for do Drive, mantém original
   },
 
+  /** Remove acentos e baixa a caixa, para busca não sensível a acentuação */
+  normalizeForSearch(text) {
+    return String(text || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  },
+
   /** Busca um produto pelo id no DB */
   getProductById(productId) {
     return DB.products.find(p => p.id === productId);
   },
 
-  /** Retorna a lista de produtos ativos filtrados pela categoria selecionada */
+  /** Retorna a lista de produtos ativos, filtrados por categoria E pela busca */
   getVisibleProducts() {
+    const query = Utils.normalizeForSearch(state.searchQuery);
+
     return DB.products.filter(product => {
-      const isActive = product.isActive === true; // Requisito 2: filtrar apenas ativos
+      const isActive = product.isActive === true; // Requisito: filtrar apenas ativos
       const matchesCategory =
         state.activeCategory === 'all' ||
         DB.categories.find(c => c.id === product.categoryId)?.slug === state.activeCategory;
-      return isActive && matchesCategory;
+      const matchesSearch =
+        query === '' || Utils.normalizeForSearch(product.name).includes(query);
+      return isActive && matchesCategory && matchesSearch;
     });
   }
 };
@@ -476,9 +559,13 @@ const Utils = {
    4. DOM — Referências centralizadas dos elementos usados no script
    -------------------------------------------------------------------------- */
 const DOM = {
+  header: document.querySelector('header'),
+  headerSpacer: document.getElementById('header-spacer'),
   storeName: document.getElementById('store-name'),
-  storeInitial: document.getElementById('store-initial'),
   categoryFilters: document.getElementById('category-filters'),
+
+  searchInput: document.getElementById('search-input'),
+  searchClearBtn: document.getElementById('search-clear-btn'),
 
   loadingState: document.getElementById('loading-state'),
   errorState: document.getElementById('error-state'),
@@ -498,6 +585,8 @@ const DOM = {
   cartSubtotal: document.getElementById('cart-subtotal'),
   checkoutBtn: document.getElementById('checkout-btn'),
 
+  whatsappFloatBtn: document.getElementById('whatsapp-float-btn'),
+
   toast: document.getElementById('toast'),
 
   productCardTemplate: document.getElementById('product-card-template'),
@@ -509,10 +598,14 @@ const DOM = {
    -------------------------------------------------------------------------- */
 const Render = {
 
-  /** Renderiza o nome da loja no header a partir do storeInfo */
+  /** Renderiza o nome da loja no header e configura o botão flutuante do WhatsApp */
   storeHeader() {
     DOM.storeName.textContent = DB.storeInfo.name;
     document.title = `${DB.storeInfo.name} | Catálogo Digital`;
+
+    // Botão flutuante: mensagem genérica de contato, diferente da mensagem de pedido do carrinho
+    const greeting = encodeURIComponent(`Olá! Vim pelo catálogo digital da ${DB.storeInfo.name} e gostaria de tirar uma dúvida.`);
+    DOM.whatsappFloatBtn.href = `https://wa.me/${DB.storeInfo.whatsappNumber}?text=${greeting}`;
   },
 
   /** Gera os botões de filtro a partir de categories, incluindo o botão "Todos" */
@@ -587,8 +680,11 @@ const Render = {
     const products = Utils.getVisibleProducts();
     DOM.productsGrid.innerHTML = '';
 
-    // Estado vazio (nenhum produto ativo na categoria selecionada)
+    // Estado vazio (nenhum produto ativo para a categoria/busca atuais)
     DOM.emptyState.classList.toggle('hidden', products.length > 0);
+    DOM.emptyState.textContent = state.searchQuery.trim() !== ''
+      ? `Nenhum produto encontrado para "${state.searchQuery.trim()}".`
+      : 'Nenhum produto encontrado nesta categoria.';
 
     products.forEach(product => {
       const node = DOM.productCardTemplate.content.cloneNode(true);
@@ -600,6 +696,14 @@ const Render = {
 
       img.src = product.imageUrl;
       img.alt = product.name;
+      // Fallback: se a imagem do Drive falhar (permissão, ID inválido, linha vazia
+      // na planilha etc), troca para um placeholder local em vez do ícone quebrado
+      // do navegador. onerror = null evita loop infinito caso o fallback também falhe.
+      img.onerror = function () {
+        this.onerror = null;
+        this.src = FALLBACK_IMAGE_URL;
+      };
+
       name.textContent = product.name;
       price.textContent = Utils.formatCurrency(product.price);
 
@@ -615,6 +719,32 @@ const Render = {
       addBtn.dataset.productId = product.id;
 
       DOM.productsGrid.appendChild(node);
+    });
+
+    // Sincroniza os badges de "Nx no carrinho" com o estado atual do carrinho
+    Render.syncCartBadgesOnGrid();
+  },
+
+  /**
+   * Percorre os cards atualmente renderizados na grid e atualiza o badge de
+   * quantidade de cada um conforme o estado do carrinho. Chamada tanto depois
+   * de renderizar a grid (filtro/busca mudou) quanto depois de qualquer
+   * alteração no carrinho — assim o badge fica sempre em sincronia sem
+   * precisar re-renderizar a grid inteira a cada clique.
+   */
+  syncCartBadgesOnGrid() {
+    DOM.productsGrid.querySelectorAll('.card-add-btn').forEach(btn => {
+      const productId = btn.dataset.productId;
+      const cartItem = state.cart.find(item => item.productId === productId);
+      const badge = btn.closest('article')?.querySelector('.cart-qty-badge');
+      if (!badge) return;
+
+      if (cartItem) {
+        badge.textContent = `${cartItem.quantity}x no carrinho`;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
     });
   },
 
@@ -639,6 +769,11 @@ const Render = {
 
       img.src = item.imageUrl;
       img.alt = item.name;
+      img.onerror = function () {
+        this.onerror = null;
+        this.src = FALLBACK_IMAGE_URL;
+      };
+
       name.textContent = item.name;
       price.textContent = `${Utils.formatCurrency(item.price)} un.`;
       qty.textContent = item.quantity;
@@ -676,6 +811,7 @@ const Render = {
     Render.cartItems();
     Render.cartBadge();
     Render.cartSubtotal();
+    Render.syncCartBadgesOnGrid(); // mantém os badges dos cards em dia
   },
 
   /** Exibe um toast simples de feedback por ~1.6s */
@@ -802,7 +938,36 @@ const WhatsApp = {
 };
 
 /* --------------------------------------------------------------------------
-   8. EVENTS — Listeners e delegação de eventos
+   8. LAYOUT — Ajustes de layout que dependem de medir o DOM em runtime
+   -------------------------------------------------------------------------- */
+const Layout = {
+  /**
+   * O header é "fixed", então o conteúdo abaixo dele precisa de um espaçador
+   * com a mesma altura para não ficar escondido atrás dele. Em vez de fixar
+   * um valor de altura "no chute" (frágil — quebra se o header crescer, por
+   * exemplo com a barra de busca, categorias em 2 linhas em telas menores,
+   * fontes carregando de forma assíncrona etc), medimos a altura real do
+   * header e aplicamos no espaçador. Um ResizeObserver mantém isso sempre
+   * sincronizado, inclusive em mudanças de orientação/tamanho de tela.
+   */
+  syncHeaderSpacer() {
+    if (!DOM.header || !DOM.headerSpacer) return;
+    DOM.headerSpacer.style.height = `${DOM.header.offsetHeight}px`;
+  },
+
+  observeHeaderResize() {
+    if (typeof ResizeObserver === 'undefined' || !DOM.header) {
+      // Fallback para navegadores sem ResizeObserver: recalcula pelo menos no resize da janela
+      window.addEventListener('resize', Layout.syncHeaderSpacer);
+      return;
+    }
+    const observer = new ResizeObserver(() => Layout.syncHeaderSpacer());
+    observer.observe(DOM.header);
+  }
+};
+
+/* --------------------------------------------------------------------------
+   9. EVENTS — Listeners e delegação de eventos
    -------------------------------------------------------------------------- */
 const Events = {
   bindAll() {
@@ -818,6 +983,29 @@ const Events = {
 
       state.activeCategory = btn.dataset.slug;
       Render.highlightActiveFilter();
+      Render.productsGrid();
+    });
+
+    // Busca por nome do produto, com um pequeno debounce pra não re-renderizar a cada tecla
+    let searchDebounceId = null;
+    DOM.searchInput.addEventListener('input', (event) => {
+      const value = event.target.value;
+      DOM.searchClearBtn.classList.toggle('hidden', value.trim() === '');
+      DOM.searchClearBtn.classList.toggle('flex', value.trim() !== '');
+
+      clearTimeout(searchDebounceId);
+      searchDebounceId = setTimeout(() => {
+        state.searchQuery = value;
+        Render.productsGrid();
+      }, 200);
+    });
+
+    DOM.searchClearBtn.addEventListener('click', () => {
+      DOM.searchInput.value = '';
+      DOM.searchInput.focus();
+      DOM.searchClearBtn.classList.add('hidden');
+      DOM.searchClearBtn.classList.remove('flex');
+      state.searchQuery = '';
       Render.productsGrid();
     });
 
@@ -850,13 +1038,17 @@ const Events = {
 };
 
 /* --------------------------------------------------------------------------
-   9. INIT — Bootstrap da aplicação
+   10. INIT — Bootstrap da aplicação
    -------------------------------------------------------------------------- */
 async function init() {
   // Dados fixos da loja (não vêm da planilha) e listeners podem ser montados de imediato
   Render.storeHeader();
   Render.cart();
   Events.bindAll();
+
+  // Sincroniza o espaçador do header agora e sempre que o header mudar de tamanho
+  Layout.syncHeaderSpacer();
+  Layout.observeHeaderResize();
 
   // Mostra o loading e só libera a tela quando as DUAS requisições retornarem
   Render.showLoading();
@@ -871,6 +1063,9 @@ async function init() {
     Render.categoryFilters();
     Render.productsGrid();
     Render.showContent();
+
+    // O header pode mudar de altura depois que as categorias chegam (mais botões = possível quebra de linha)
+    Layout.syncHeaderSpacer();
   } catch (error) {
     // Loga o erro real no console para depuração, mas mostra mensagem amigável na tela
     console.error('Erro ao carregar catálogo do SheetDB:', error);
