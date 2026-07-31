@@ -267,7 +267,7 @@
         1.1 API    — chamadas fetch ao SheetDB (Categorias e Catalogo)
         1.2 MAPPER — normaliza as linhas brutas da planilha para o formato da UI
      2. STATE (estado da aplicação: filtro ativo + carrinho)
-     3. UTILS (formatação, parsing de preço/boolean, helpers puros)
+     3. UTILS (formatação, parsing de preço/boolean/imagem do Drive, helpers puros)
      4. DOM (referências aos elementos)
      5. RENDER (funções responsáveis apenas por desenhar a UI a partir do estado)
      6. CART (regras de negócio do carrinho: add/remove/update)
@@ -359,7 +359,9 @@ const Mapper = {
         ? String(row.description).trim()
         : null,
       price: Utils.parsePrice(row.price),
-      imageUrl: row.imageUrl,
+      // Converte o link de compartilhamento do Google Drive (vindo do Forms)
+      // em uma URL direta de imagem, pronta para uso no atributo src do <img>.
+      imageUrl: Utils.parseDriveImageUrl(row.imageUrl),
       isActive: Utils.parseBoolean(row.isActive)
     };
   }
@@ -415,6 +417,43 @@ const Utils = {
 
     const normalized = rawValue.trim().toLowerCase();
     return ['true', '1', 'sim', 'yes', 'verdadeiro', 'ativo'].includes(normalized);
+  },
+
+  /**
+   * Converte um link de compartilhamento do Google Drive (formatos:
+   * "https://drive.google.com/open?id=ID" ou
+   * "https://drive.google.com/file/d/ID/view") em uma URL direta de imagem:
+   * "https://drive.google.com/uc?export=view&id=ID".
+   * Extrai o ID via Regex (padrão /file/d/ID/) com fallback via URLSearchParams
+   * (padrão ?id=ID). Se a URL não for do Drive (ou já vier em outro formato,
+   * como um placeholder), retorna a própria URL original sem modificar.
+   */
+  parseDriveImageUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string') return '';
+
+    const url = rawUrl.trim();
+    if (url === '') return '';
+
+    // Padrão 1: https://drive.google.com/file/d/ID_AQUI/view
+    const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (fileIdMatch) {
+      return `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`;
+    }
+
+    // Padrão 2: https://drive.google.com/open?id=ID_AQUI (ou qualquer ?id=/&id=)
+    try {
+      const parsedUrl = new URL(url);
+      const idParam = parsedUrl.searchParams.get('id');
+      if (idParam) {
+        return `https://drive.google.com/uc?export=view&id=${idParam}`;
+      }
+    } catch (error) {
+      // URL inválida/relativa (ex: link de placeholder) — cai no fallback abaixo
+    }
+
+    // Não é um link do Google Drive reconhecido: devolve como veio
+    // (permite continuar usando URLs diretas normais, ex: via.placeholder.com)
+    return url;
   },
 
   /** Busca um produto pelo id no DB */
