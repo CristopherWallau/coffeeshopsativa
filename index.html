@@ -422,8 +422,12 @@ const Utils = {
   /**
    * Converte um link de compartilhamento do Google Drive (formatos:
    * "https://drive.google.com/open?id=ID" ou
-   * "https://drive.google.com/file/d/ID/view") em uma URL direta de imagem:
-   * "https://drive.google.com/uc?export=view&id=ID".
+   * "https://drive.google.com/file/d/ID/view") em uma URL direta de imagem,
+   * usando o endpoint de thumbnail do Drive: "https://drive.google.com/thumbnail?id=ID&sz=w1000".
+   * (O endpoint "uc?export=view" é bloqueado pelo navegador em tags <img> por
+   * CORB — Cross-Origin Read Blocking —, então usamos o thumbnail, que é
+   * servido com os headers corretos para embed. sz=w1000 pede a imagem em
+   * boa resolução, com até 1000px de largura.)
    * Extrai o ID via Regex (padrão /file/d/ID/) com fallback via URLSearchParams
    * (padrão ?id=ID). Se a URL não for do Drive (ou já vier em outro formato,
    * como um placeholder), retorna a própria URL original sem modificar.
@@ -437,7 +441,7 @@ const Utils = {
     // Padrão 1: https://drive.google.com/file/d/ID_AQUI/view
     const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
     if (fileIdMatch) {
-      return `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`;
+      return `https://drive.google.com/thumbnail?id=${fileIdMatch[1]}&sz=w1000`;
     }
 
     // Padrão 2: https://drive.google.com/open?id=ID_AQUI (ou qualquer ?id=/&id=)
@@ -445,7 +449,7 @@ const Utils = {
       const parsedUrl = new URL(url);
       const idParam = parsedUrl.searchParams.get('id');
       if (idParam) {
-        return `https://drive.google.com/uc?export=view&id=${idParam}`;
+        return `https://drive.google.com/thumbnail?id=${idParam}&sz=w1000`;
       }
     } catch (error) {
       // URL inválida/relativa (ex: link de placeholder) — cai no fallback abaixo
