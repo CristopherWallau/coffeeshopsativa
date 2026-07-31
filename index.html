@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Sativa Coffee Shop | Catálogo Digital</title>
 
+<!-- Novas Fontes: Zilla Slab para a marca e Inter para o resto -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Zilla+Slab:wght@600;700&display=swap" rel="stylesheet">
+
 <!-- Tailwind CSS via CDN -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
@@ -13,40 +18,39 @@
       extend: {
         colors: {
           brand: {
-            50:  '#f4f1ec',
-            100: '#e6ded0',
-            200: '#d0c0a3',
-            400: '#a9814b',
-            500: '#8a6636',
-            600: '#6f5029',
-            700: '#54391c',
-            800: '#3b2712',
-            900: '#241608',
+            50:  '#f2f7f4', // Fundo bem clarinho levemente esverdeado
+            100: '#e1ede5', // Bordas e fundos secundários
+            200: '#c5dacd',
+            400: '#759f84',
+            500: '#4e7b60', // Verde médio (plantas)
+            600: '#3a624a', // Verde da parede da loja
+            700: '#2f4f3c', 
+            800: '#1b3b26', // Verde bem escuro pro Header
+            900: '#0f2415', // Texto escuro
           },
           accent: {
-            500: '#25D366', // verde WhatsApp
-            600: '#1ebe57',
+            500: '#f97316', // Laranja do Gato/Letreiro (Botões principais)
+            600: '#ea580c', // Laranja mais escuro pro hover
           }
         },
         fontFamily: {
           sans: ['Inter', 'system-ui', 'sans-serif'],
+          serif: ['Zilla Slab', 'serif'], // Nova fonte para a marca
         }
       }
     }
   }
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
-  /* Estilos que o Tailwind (via utilitários) não cobre com elegância */
   html, body { font-family: 'Inter', system-ui, sans-serif; }
 
-  /* Esconde a barra de rolagem dos filtros mantendo a rolagem funcional (estilo Vendizap) */
+  /* Aplica a fonte especial apenas no nome da loja e títulos principais */
+  .font-brand { font-family: 'Zilla Slab', serif; }
+
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-  /* Transição do offcanvas do carrinho */
   #cart-drawer {
     transition: transform 0.3s ease-in-out;
     transform: translateX(100%);
@@ -63,7 +67,6 @@
     pointer-events: auto;
   }
 
-  /* Animação leve do badge do carrinho ao atualizar */
   @keyframes pop {
     0%   { transform: scale(1); }
     50%  { transform: scale(1.35); }
@@ -71,7 +74,6 @@
   }
   .badge-pop { animation: pop 0.25s ease-in-out; }
 
-  /* Toast de feedback "produto adicionado" */
   #toast {
     transition: opacity 0.3s ease, transform 0.3s ease;
     opacity: 0;
@@ -83,7 +85,6 @@
     transform: translateY(0);
   }
 
-  /* Efeito sutil de clique nos cards */
   .card-add-btn:active { transform: scale(0.96); }
 </style>
 </head>
