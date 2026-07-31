@@ -351,18 +351,15 @@ const Mapper = {
   toProduct(row) {
     return {
       id: row.id,
-      categoryId: row.categoryId,
+      categoryId: row.categoryid, // Tudo minúsculo, igual ao form
       name: row.name,
-      // Descrição opcional: string vazia, undefined ou null viram null,
-      // para que o Render saiba que não deve desenhar a tag <p> no card.
       description: (row.description && String(row.description).trim() !== '')
         ? String(row.description).trim()
         : null,
       price: Utils.parsePrice(row.price),
-      // Converte o link de compartilhamento do Google Drive (vindo do Forms)
-      // em uma URL direta de imagem, pronta para uso no atributo src do <img>.
       imageUrl: Utils.parseDriveImageUrl(row.imageUrl),
-      isActive: Utils.parseBoolean(row.isActive)
+      // CORREÇÃO: Se a coluna isActive vier vazia ou não existir, assume como TRUE (ativo)
+      isActive: (row.isActive === undefined || row.isActive === null || String(row.isActive).trim() === '') ? true : Utils.parseBoolean(row.isActive)
     };
   }
 };
@@ -434,30 +431,28 @@ const Utils = {
    */
   parseDriveImageUrl(rawUrl) {
     if (!rawUrl || typeof rawUrl !== 'string') return '';
-
     const url = rawUrl.trim();
     if (url === '') return '';
 
-    // Padrão 1: https://drive.google.com/file/d/ID_AQUI/view
+    // Servidor oficial de imagens do Google (Bypassa o CORB 100%)
+    const baseUrl = 'https://lh3.googleusercontent.com/d/';
+
+    // Padrão 1: /file/d/ID
     const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
     if (fileIdMatch) {
-      return `https://drive.google.com/thumbnail?id=${fileIdMatch[1]}&sz=w1000`;
+      return `${baseUrl}${fileIdMatch[1]}`;
     }
 
-    // Padrão 2: https://drive.google.com/open?id=ID_AQUI (ou qualquer ?id=/&id=)
+    // Padrão 2: ?id=ID
     try {
       const parsedUrl = new URL(url);
       const idParam = parsedUrl.searchParams.get('id');
       if (idParam) {
-        return `https://drive.google.com/thumbnail?id=${idParam}&sz=w1000`;
+        return `${baseUrl}${idParam}`;
       }
-    } catch (error) {
-      // URL inválida/relativa (ex: link de placeholder) — cai no fallback abaixo
-    }
+    } catch (error) {}
 
-    // Não é um link do Google Drive reconhecido: devolve como veio
-    // (permite continuar usando URLs diretas normais, ex: via.placeholder.com)
-    return url;
+    return url; // Se não for do Drive, mantém original
   },
 
   /** Busca um produto pelo id no DB */
