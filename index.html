@@ -93,7 +93,7 @@
 
   <!-- ======================= HEADER FIXO ======================= -->
   <header class="fixed top-0 inset-x-0 z-30 bg-brand-900/85 backdrop-blur-md text-white shadow-sm border-b border-brand-700/50 transition-all">
-    <div class="max-w-2xl mx-auto flex items-center justify-between px-4 py-3">
+    <div class="max-w-7xl mx-auto flex items-center justify-between px-4 py-3 md:px-8">
       <div class="flex items-center gap-2 min-w-0">
         <div class="w-10 h-10 shrink-0 rounded-full bg-brand-900 border-2 border-accent-500 overflow-hidden shadow-md">
          <img src="./logo.jpg" alt="Logo Sativa" class="w-full h-full object-cover">
@@ -120,7 +120,7 @@
 
     <!-- ================= FILTROS (scroll horizontal) ================= -->
     <nav aria-label="Filtro de categorias" class="border-t border-brand-700/60">
-      <div id="category-filters" class="max-w-2xl mx-auto flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar">
+      <div id="category-filters" class="max-w-7xl mx-auto flex gap-2 px-4 py-3 md:px-8 overflow-x-auto no-scrollbar">
         <!-- Botões de categoria injetados via JS -->
       </div>
     </nav>
@@ -130,7 +130,7 @@
   <div class="h-[112px]"></div>
 
   <!-- ======================= CONTEÚDO PRINCIPAL ======================= -->
-  <main class="max-w-2xl mx-auto px-4 pt-4">
+  <main class="max-w-7xl mx-auto px-4 md:px-8 pt-4">
 
     <!-- Estado de carregamento: exibido enquanto as duas chamadas à API (Categorias + Catálogo) não retornam -->
     <div id="loading-state" class="flex flex-col items-center justify-center gap-3 py-24 text-brand-500">
@@ -148,7 +148,7 @@
 
     <!-- Conteúdo real do catálogo: fica oculto até as duas requisições terminarem com sucesso -->
     <div id="catalog-content" class="hidden">
-      <section id="products-grid" class="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-live="polite">
+      <section id="products-grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" aria-live="polite">
         <!-- Cards de produto injetados via JS -->
       </section>
 
