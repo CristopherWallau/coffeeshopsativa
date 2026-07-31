@@ -512,7 +512,6 @@ const Render = {
   /** Renderiza o nome da loja no header a partir do storeInfo */
   storeHeader() {
     DOM.storeName.textContent = DB.storeInfo.name;
-    DOM.storeInitial.textContent = DB.storeInfo.name.charAt(0).toUpperCase();
     document.title = `${DB.storeInfo.name} | Catálogo Digital`;
   },
 
