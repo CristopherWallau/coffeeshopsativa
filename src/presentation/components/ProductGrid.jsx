@@ -1,0 +1,14 @@
+import { formatCurrency } from '../../shared/lib/formatters';
+import { PlusIcon } from './Icon';
+
+const fallbackImage = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300"><rect width="300" height="300" fill="#e1ede5"/><path d="M65 200l55-55 42 40 30-25 45 40" fill="none" stroke="#759f84" stroke-width="8"/></svg>')}`;
+
+export function ProductGrid({ products, cart, onAdd, searchQuery }) {
+  if (!products.length) return <p className="py-16 text-center text-brand-500 dark:text-brand-300">{searchQuery ? `Nenhum produto encontrado para “${searchQuery}”.` : 'Nenhum produto encontrado nesta categoria.'}</p>;
+  return <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" aria-live="polite">{products.map((product) => {
+    const inCart = cart.find((item) => item.productId === product.id);
+    return <article key={product.id} className="overflow-hidden rounded-[24px] border border-brand-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl dark:border-brand-700 dark:bg-brand-800"><div className="relative aspect-[4/5] bg-brand-100 dark:bg-brand-700"><img src={product.imageUrl || fallbackImage} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = fallbackImage; }} alt={product.name} className="h-full w-full object-cover" loading="lazy" />{inCart && <span className="absolute left-2 top-2 rounded-full bg-accent-500 px-2 py-1 text-[10px] font-bold text-white">{inCart.quantity}x no carrinho</span>}</div><div className="flex min-h-28 flex-col p-3"><h2 className="line-clamp-2 text-sm font-semibold leading-tight text-brand-900 dark:text-white">{product.name}</h2>{product.description && <p className="line-clamp-2 mt-1 flex-1 text-xs text-brand-500 dark:text-brand-300">{product.description}</p>}<div className="mt-3 flex items-center justify-between"><span className="text-sm font-extrabold text-brand-700 dark:text-brand-100">{formatCurrency(product.price)}</span><button onClick={() => onAdd(product)} aria-label={`Adicionar ${product.name}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-700 text-white transition-transform active:scale-95 hover:bg-brand-600"><PlusIcon /></button></div></div></article>;
+  })}</section>;
+}
+
+export function SkeletonGrid() { return <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">{Array.from({ length: 10 }, (_, index) => <div key={index} className="animate-pulse overflow-hidden rounded-[24px] border border-brand-100 bg-white dark:border-brand-700 dark:bg-brand-800"><div className="aspect-[4/5] bg-brand-100 dark:bg-brand-700" /><div className="space-y-2 p-3"><div className="h-3 w-4/5 rounded bg-brand-100 dark:bg-brand-700" /><div className="h-3 w-3/5 rounded bg-brand-100 dark:bg-brand-700" /></div></div>)}</div>; }

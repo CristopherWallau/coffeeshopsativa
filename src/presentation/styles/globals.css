@@ -1,0 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Zilla+Slab:wght@600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #f2f7f4;
+  --color-brand-100: #e1ede5;
+  --color-brand-200: #c5dacd;
+  --color-brand-300: #9bbba5;
+  --color-brand-400: #759f84;
+  --color-brand-500: #4e7b60;
+  --color-brand-600: #3a624a;
+  --color-brand-700: #2f4f3c;
+  --color-brand-800: #1b3b26;
+  --color-brand-900: #0f2415;
+  --color-accent-500: #f97316;
+  --color-accent-600: #ea580c;
+  --font-brand: 'Zilla Slab', serif;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+html, body, #root { min-height: 100%; }
+body { margin: 0; font-family: Inter, system-ui, sans-serif; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.icon-button { display: flex; height: 2.5rem; width: 2.5rem; align-items: center; justify-content: center; border-radius: 9999px; background: var(--color-brand-700); color: white; border: 0; cursor: pointer; }
+.icon-button:hover { background: var(--color-brand-600); }
+.quantity-button { height: 1.5rem; width: 1.5rem; border-radius: 9999px; border: 1px solid var(--color-brand-200); background: transparent; color: var(--color-brand-700); cursor: pointer; }
+.dark .quantity-button { border-color: var(--color-brand-600); color: var(--color-brand-100); }
