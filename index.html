@@ -5,6 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Sativa Coffee Shop | Catálogo Digital</title>
 
+<!-- ============================================================
+     DETECÇÃO DE TEMA (dark mode) — precisa rodar ANTES do script
+     do Tailwind CDN carregar, pra classe "dark" já estar na <html>
+     no primeiro paint e evitar o "flash" de tema claro.
+     ============================================================ -->
+<script>
+  (function () {
+    try {
+      var saved = localStorage.getItem('sativa-theme');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var isDark = saved ? saved === 'dark' : prefersDark;
+      if (isDark) document.documentElement.classList.add('dark');
+    } catch (e) { /* localStorage indisponível (modo privado etc) — segue com tema claro */ }
+  })();
+</script>
+
 <!-- Novas Fontes: Zilla Slab para a marca e Inter para o resto -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,6 +30,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
+    darkMode: 'class', // dark mode controlado via classe .dark na <html> (toggle manual), não via preferência do SO
     theme: {
       extend: {
         colors: {
@@ -26,7 +43,7 @@
             600: '#3a624a', // Verde da parede da loja
             700: '#2f4f3c', 
             800: '#1b3b26', // Verde bem escuro pro Header
-            900: '#0f2415', // Texto escuro
+            900: '#0f2415', // Texto escuro / fundo dark mode
           },
           accent: {
             500: '#f97316', // Laranja do Gato/Letreiro (Botões principais)
@@ -93,10 +110,15 @@
     50%      { box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); }
   }
   #whatsapp-float-btn { animation: float-pulse 2.5s ease-in-out infinite; }
+
+  /* Transições suaves para os elementos que mudam de posição/tamanho via classe */
+  #whatsapp-float-btn, #floating-cart-bar, #filters-fade-left, #filters-fade-right {
+    transition: bottom 0.25s ease, opacity 0.2s ease;
+  }
 </style>
 </head>
 
-<body class="bg-brand-50 text-brand-900 min-h-screen pb-10">
+<body class="bg-brand-50 text-brand-900 dark:bg-brand-900 dark:text-brand-50 min-h-screen pb-24 transition-colors">
 
   <!-- ======================= HEADER FIXO ======================= -->
   <header class="fixed top-0 inset-x-0 z-30 bg-brand-900/85 backdrop-blur-md text-white shadow-sm border-b border-brand-700/50 transition-all">
@@ -111,18 +133,38 @@
         </div>
       </div>
 
-      <!-- Botão do carrinho com badge numérico -->
-      <button id="cart-btn" aria-label="Abrir carrinho" class="relative w-10 h-10 flex items-center justify-center rounded-full bg-brand-700 hover:bg-brand-600 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="9" cy="21" r="1"></circle>
-          <circle cx="20" cy="21" r="1"></circle>
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-        </svg>
-        <span id="cart-badge"
-          class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-accent-500 text-white text-[10px] font-bold flex items-center justify-center hidden">
-          0
-        </span>
-      </button>
+      <div class="flex items-center gap-2 shrink-0">
+        <!-- Botão de alternância de tema claro/escuro -->
+        <button id="theme-toggle-btn" type="button" aria-label="Alternar tema claro/escuro" class="w-10 h-10 flex items-center justify-center rounded-full bg-brand-700 hover:bg-brand-600 transition-colors">
+          <svg id="theme-icon-sun" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg id="theme-icon-moon" class="w-5 h-5 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+
+        <!-- Botão do carrinho com badge numérico -->
+        <button id="cart-btn" aria-label="Abrir carrinho" class="relative w-10 h-10 flex items-center justify-center rounded-full bg-brand-700 hover:bg-brand-600 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span id="cart-badge"
+            class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-accent-500 text-white text-[10px] font-bold flex items-center justify-center hidden">
+            0
+          </span>
+        </button>
+      </div>
     </div>
 
     <!-- ================= BUSCA POR PRODUTO ================= -->
@@ -156,10 +198,16 @@
       </div>
     </div>
 
-    <!-- ================= FILTROS (scroll horizontal) ================= -->
+    <!-- ================= FILTROS (scroll horizontal, com fade nas bordas) ================= -->
     <nav aria-label="Filtro de categorias" class="border-t border-brand-700/60">
-      <div id="category-filters" class="max-w-7xl mx-auto flex gap-2 px-4 py-3 md:px-8 overflow-x-auto no-scrollbar">
-        <!-- Botões de categoria injetados via JS -->
+      <div class="relative max-w-7xl mx-auto">
+        <!-- Overlays de fade: indicam visualmente que dá pra arrastar a lista de categorias -->
+        <div id="filters-fade-left" class="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-brand-900 to-transparent opacity-0 z-10"></div>
+        <div id="filters-fade-right" class="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-brand-900 to-transparent opacity-0 z-10"></div>
+
+        <div id="category-filters" class="flex gap-2 px-4 py-3 md:px-8 overflow-x-auto no-scrollbar">
+          <!-- Botões de categoria injetados via JS -->
+        </div>
       </div>
     </nav>
   </header>
@@ -172,17 +220,15 @@
   <!-- ======================= CONTEÚDO PRINCIPAL ======================= -->
   <main class="max-w-7xl mx-auto px-4 md:px-8 pt-4">
 
-    <!-- Estado de carregamento: exibido enquanto as duas chamadas à API (Categorias + Catálogo) não retornam -->
-    <div id="loading-state" class="flex flex-col items-center justify-center gap-3 py-24 text-brand-500">
-      <svg class="animate-spin h-8 w-8 text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-      </svg>
-      <p class="text-sm font-medium">Carregando catálogo...</p>
+    <!-- Estado de carregamento: skeleton cards pulsando no lugar dos produtos reais -->
+    <div id="loading-state" class="hidden">
+      <div id="skeleton-grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <!-- Skeletons injetados via JS a partir do #skeleton-card-template -->
+      </div>
     </div>
 
     <!-- Estado de erro: exibido caso alguma das chamadas à API falhe -->
-    <div id="error-state" class="hidden flex-col items-center justify-center gap-2 py-24 text-center text-red-500">
+    <div id="error-state" class="hidden flex-col items-center justify-center gap-2 py-24 text-center text-red-500 dark:text-red-400">
       <p id="error-message" class="text-sm font-medium">Não foi possível carregar o catálogo. Tente novamente mais tarde.</p>
     </div>
 
@@ -192,23 +238,75 @@
         <!-- Cards de produto injetados via JS -->
       </section>
 
-      <p id="empty-state" class="hidden text-center text-brand-500 py-16">
+      <p id="empty-state" class="hidden text-center text-brand-500 dark:text-brand-300 py-16">
         Nenhum produto encontrado.
       </p>
     </div>
   </main>
 
+  <!-- ======================= RODAPÉ INSTITUCIONAL ======================= -->
+  <!-- ⚠️ Todo o conteúdo aqui vem do objeto STORE_EXTRA_INFO no <script>, NÃO da planilha.
+       Edite os valores lá antes de publicar — os placeholders ficam visíveis de propósito
+       (ex: "[Substitua...]") pra não passarem despercebidos se você esquecer de trocar. -->
+  <footer class="mt-10 bg-brand-800 text-brand-50 border-t border-brand-700">
+    <div class="max-w-7xl mx-auto px-4 md:px-8 py-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+      <div>
+        <h2 class="font-brand text-lg font-bold text-accent-500 mb-2">Sativa Coffee Shop</h2>
+        <a id="footer-rating-link" href="#" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-sm text-brand-100 hover:text-accent-500 transition-colors">
+          <span aria-hidden="true">⭐</span>
+          <span id="footer-rating-text">Carregando avaliação...</span>
+        </a>
+      </div>
+
+      <div>
+        <h3 class="font-semibold text-xs uppercase tracking-wide text-brand-300 mb-2">Endereço</h3>
+        <p id="footer-address" class="text-sm text-brand-100 mb-2"></p>
+        <a id="footer-directions-btn" href="#" target="_blank" rel="noopener"
+           class="inline-flex items-center gap-1.5 text-sm font-semibold text-accent-500 hover:text-accent-600 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          Como chegar
+        </a>
+      </div>
+
+      <div>
+        <h3 class="font-semibold text-xs uppercase tracking-wide text-brand-300 mb-2">Horário de funcionamento</h3>
+        <ul id="footer-hours" class="text-sm text-brand-100 space-y-0.5">
+          <!-- Itens injetados via JS a partir de STORE_EXTRA_INFO.hours -->
+        </ul>
+      </div>
+    </div>
+
+    <div class="border-t border-brand-700/60">
+      <div class="max-w-7xl mx-auto px-4 md:px-8 py-4 flex flex-wrap items-center justify-between gap-3">
+        <p class="text-xs text-brand-300">&copy; <span id="footer-year"></span> Sativa Coffee Shop. Todos os direitos reservados.</p>
+        <div class="flex items-center gap-3">
+          <a id="footer-instagram" href="#" target="_blank" rel="noopener" aria-label="Instagram"
+             class="w-8 h-8 flex items-center justify-center rounded-full bg-brand-700 hover:bg-accent-500 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
   <!-- ======================= OFFCANVAS DO CARRINHO ======================= -->
   <div id="cart-overlay" class="fixed inset-0 bg-black/50 z-40"></div>
 
   <aside id="cart-drawer"
-    class="fixed top-0 right-0 z-50 w-full max-w-sm h-full bg-white shadow-2xl flex flex-col"
+    class="fixed top-0 right-0 z-50 w-full max-w-sm h-full bg-white dark:bg-brand-900 shadow-2xl flex flex-col"
     aria-label="Carrinho de compras">
 
     <!-- Cabeçalho do carrinho -->
-    <div class="flex items-center justify-between px-4 py-4 border-b border-brand-100">
-      <h2 class="font-bold text-lg text-brand-900">Meu Carrinho</h2>
-      <button id="cart-close-btn" aria-label="Fechar carrinho" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-brand-50">
+    <div class="flex items-center justify-between px-4 py-4 border-b border-brand-100 dark:border-brand-700">
+      <h2 class="font-bold text-lg text-brand-900 dark:text-white">Meu Carrinho</h2>
+      <button id="cart-close-btn" aria-label="Fechar carrinho" class="w-9 h-9 flex items-center justify-center rounded-full text-brand-900 dark:text-white hover:bg-brand-50 dark:hover:bg-brand-700">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -217,12 +315,12 @@
     </div>
 
     <!-- Lista de itens do carrinho -->
-    <div id="cart-items" class="flex-1 overflow-y-auto px-4 py-3 divide-y divide-brand-100">
+    <div id="cart-items" class="flex-1 overflow-y-auto px-4 py-3 divide-y divide-brand-100 dark:divide-brand-700">
       <!-- Itens injetados via JS -->
     </div>
 
     <!-- Estado vazio do carrinho -->
-    <div id="cart-empty" class="flex-1 flex flex-col items-center justify-center text-center px-6 text-brand-400 hidden">
+    <div id="cart-empty" class="flex-1 flex flex-col items-center justify-center text-center px-6 text-brand-400 dark:text-brand-300 hidden">
       <svg xmlns="http://www.w3.org/2000/svg" class="w-14 h-14 mb-3 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="9" cy="21" r="1"></circle>
         <circle cx="20" cy="21" r="1"></circle>
@@ -233,10 +331,10 @@
     </div>
 
     <!-- Rodapé com subtotal e CTA -->
-    <div class="border-t border-brand-100 px-4 py-4 bg-white">
+    <div class="border-t border-brand-100 dark:border-brand-700 px-4 py-4 bg-white dark:bg-brand-900">
       <div class="flex items-center justify-between mb-3">
-        <span class="text-brand-500 font-medium">Subtotal</span>
-        <span id="cart-subtotal" class="text-xl font-extrabold text-brand-900">R$ 0,00</span>
+        <span class="text-brand-500 dark:text-brand-300 font-medium">Subtotal</span>
+        <span id="cart-subtotal" class="text-xl font-extrabold text-brand-900 dark:text-white">R$ 0,00</span>
       </div>
       <button id="checkout-btn"
         class="w-full flex items-center justify-center gap-2 bg-accent-500 hover:bg-accent-600 disabled:opacity-40 disabled:pointer-events-none text-white font-bold py-3 rounded-xl transition-colors">
@@ -260,16 +358,38 @@
      target="_blank"
      rel="noopener"
      aria-label="Falar no WhatsApp"
-     class="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full bg-accent-500 hover:bg-accent-600 text-white flex items-center justify-center shadow-xl transition-transform hover:scale-105">
+     class="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full bg-accent-500 hover:bg-accent-600 text-white flex items-center justify-center shadow-xl">
     <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
       <path d="M20.52 3.48A11.86 11.86 0 0 0 12.04 0C5.5 0 .2 5.3.2 11.84c0 2.09.55 4.13 1.6 5.93L0 24l6.4-1.68a11.8 11.8 0 0 0 5.63 1.44h.01c6.53 0 11.84-5.3 11.84-11.84 0-3.16-1.23-6.13-3.36-8.44ZM12.04 21.6a9.7 9.7 0 0 1-4.95-1.36l-.35-.21-3.7.97.99-3.6-.23-.37a9.75 9.75 0 0 1-1.5-5.2c0-5.39 4.39-9.78 9.79-9.78 2.61 0 5.07 1.02 6.92 2.87a9.7 9.7 0 0 1 2.86 6.91c0 5.4-4.39 9.79-9.83 9.79Zm5.36-7.34c-.29-.15-1.72-.85-1.99-.95-.27-.1-.46-.15-.66.15-.2.29-.76.94-.93 1.14-.17.19-.34.22-.63.07-.29-.15-1.24-.46-2.36-1.46-.87-.78-1.46-1.74-1.63-2.03-.17-.29-.02-.45.13-.6.13-.13.29-.34.44-.51.15-.17.19-.29.29-.49.1-.19.05-.36-.02-.51-.07-.15-.66-1.59-.9-2.18-.24-.57-.48-.49-.66-.5-.17-.01-.36-.01-.56-.01-.19 0-.51.07-.78.36-.27.29-1.02 1-1.02 2.44s1.05 2.83 1.19 3.03c.15.19 2.06 3.15 5 4.42.7.3 1.25.48 1.68.61.7.22 1.34.19 1.84.12.56-.08 1.72-.7 1.96-1.38.24-.68.24-1.26.17-1.38-.07-.12-.26-.19-.55-.34Z"/>
     </svg>
   </a>
 
+  <!-- Barra de carrinho flutuante: só aparece quando há itens; some naturalmente atrás
+       do drawer (z-index menor) quando o carrinho é aberto. -->
+  <button id="floating-cart-bar" type="button"
+    class="hidden fixed bottom-0 inset-x-0 z-40 items-center justify-between gap-3 bg-brand-800 text-white px-4 py-3.5 shadow-[0_-4px_20px_rgba(0,0,0,0.25)]"
+    style="padding-bottom: calc(0.875rem + env(safe-area-inset-bottom));">
+    <span class="flex items-center gap-2 text-sm font-medium">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="21" r="1"></circle>
+        <circle cx="20" cy="21" r="1"></circle>
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+      </svg>
+      <span id="floating-cart-qty-text">0 itens</span>
+    </span>
+    <span class="flex items-center gap-1.5 font-bold text-accent-500">
+      Ver carrinho
+      <span id="floating-cart-subtotal-text">R$ 0,00</span>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+    </span>
+  </button>
+
   <!-- Template (HTML5 semântico) reutilizado pelo JS para renderizar cada card de produto -->
   <template id="product-card-template">
-    <article class="bg-white rounded-[24px] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-brand-100 overflow-hidden flex flex-col group">
-      <div class="relative aspect-[4/5] w-full bg-brand-100 overflow-hidden">
+    <article class="bg-white dark:bg-brand-800 rounded-[24px] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-brand-100 dark:border-brand-700 overflow-hidden flex flex-col group">
+      <div class="relative aspect-[4/5] w-full bg-brand-100 dark:bg-brand-700 overflow-hidden">
         <img class="product-img w-full h-full object-cover" src="" alt="" loading="lazy">
         <!-- Badge de quantidade: só aparece se o produto já estiver no carrinho -->
         <span class="cart-qty-badge hidden absolute top-2 left-2 bg-accent-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-md">
@@ -277,10 +397,10 @@
         </span>
       </div>
       <div class="p-3 flex flex-col flex-1">
-        <h3 class="product-name font-semibold text-sm text-brand-900 leading-tight line-clamp-2"></h3>
-        <p class="product-desc text-xs text-brand-500 mt-1 line-clamp-2 flex-1"></p>
+        <h3 class="product-name font-semibold text-sm text-brand-900 dark:text-white leading-tight line-clamp-2"></h3>
+        <p class="product-desc text-xs text-brand-500 dark:text-brand-300 mt-1 line-clamp-2 flex-1"></p>
         <div class="flex items-center justify-between mt-3">
-          <span class="product-price font-extrabold text-brand-700 text-sm"></span>
+          <span class="product-price font-extrabold text-brand-700 dark:text-brand-100 text-sm"></span>
           <button type="button" class="card-add-btn w-8 h-8 flex items-center justify-center rounded-full bg-brand-700 hover:bg-brand-600 text-white transition-transform">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -292,20 +412,35 @@
     </article>
   </template>
 
+  <!-- Template de skeleton (placeholder pulsante) usado durante o carregamento -->
+  <template id="skeleton-card-template">
+    <div class="bg-white dark:bg-brand-800 rounded-[24px] border border-brand-100 dark:border-brand-700 overflow-hidden animate-pulse">
+      <div class="aspect-[4/5] w-full bg-brand-100 dark:bg-brand-700"></div>
+      <div class="p-3">
+        <div class="h-3.5 w-4/5 bg-brand-100 dark:bg-brand-700 rounded"></div>
+        <div class="h-3.5 w-3/5 bg-brand-100 dark:bg-brand-700 rounded mt-2"></div>
+        <div class="flex items-center justify-between mt-4">
+          <div class="h-4 w-12 bg-brand-100 dark:bg-brand-700 rounded"></div>
+          <div class="h-8 w-8 bg-brand-100 dark:bg-brand-700 rounded-full"></div>
+        </div>
+      </div>
+    </div>
+  </template>
+
   <!-- Template reutilizado pelo JS para renderizar cada item do carrinho -->
   <template id="cart-item-template">
     <div class="flex items-center gap-3 py-3">
       <img class="cart-item-img w-14 h-14 rounded-lg object-cover bg-brand-100 shrink-0" src="" alt="">
       <div class="flex-1 min-w-0">
-        <p class="cart-item-name font-semibold text-sm text-brand-900 truncate"></p>
-        <p class="cart-item-price text-xs text-brand-500 mt-0.5"></p>
+        <p class="cart-item-name font-semibold text-sm text-brand-900 dark:text-white truncate"></p>
+        <p class="cart-item-price text-xs text-brand-500 dark:text-brand-300 mt-0.5"></p>
         <div class="flex items-center gap-2 mt-2">
-          <button type="button" class="qty-decrease w-6 h-6 flex items-center justify-center rounded-full border border-brand-200 text-brand-700 hover:bg-brand-50">−</button>
+          <button type="button" class="qty-decrease w-6 h-6 flex items-center justify-center rounded-full border border-brand-200 dark:border-brand-600 text-brand-700 dark:text-brand-100 hover:bg-brand-50 dark:hover:bg-brand-700">−</button>
           <span class="cart-item-qty text-sm font-medium w-5 text-center"></span>
-          <button type="button" class="qty-increase w-6 h-6 flex items-center justify-center rounded-full border border-brand-200 text-brand-700 hover:bg-brand-50">+</button>
+          <button type="button" class="qty-increase w-6 h-6 flex items-center justify-center rounded-full border border-brand-200 dark:border-brand-600 text-brand-700 dark:text-brand-100 hover:bg-brand-50 dark:hover:bg-brand-700">+</button>
         </div>
       </div>
-      <button type="button" class="cart-item-remove text-brand-300 hover:text-red-500 p-1" aria-label="Remover item">
+      <button type="button" class="cart-item-remove text-brand-300 dark:text-brand-500 hover:text-red-500 p-1" aria-label="Remover item">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"></polyline>
           <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -328,9 +463,10 @@
      5. RENDER (funções responsáveis apenas por desenhar a UI a partir do estado)
      6. CART (regras de negócio do carrinho: add/remove/update)
      7. WHATSAPP (montagem da mensagem e redirecionamento)
-     8. LAYOUT (ajustes de layout dependentes de medição do DOM, ex: spacer do header)
-     9. EVENTS (listeners / delegação de eventos)
-    10. INIT (bootstrap assíncrono: fetch → loading → render)
+     8. THEME (dark mode: toggle + persistência)
+     9. LAYOUT (ajustes de layout dependentes de medição/scroll do DOM)
+    10. EVENTS (listeners / delegação de eventos)
+    11. INIT (bootstrap assíncrono: fetch → loading → render)
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -346,6 +482,23 @@ const DB = {
   },
   "categories": [], // preenchido após o fetch em ?sheet=Categorias
   "products": []    // preenchido após o fetch em ?sheet=Catalogo
+};
+
+/**
+ * ⚠️ EDITE AQUI antes de publicar o site — informações institucionais
+ * usadas no rodapé (endereço, mapa, horário, redes sociais e avaliação).
+ * Nada disso vem da planilha; são dados fixos preenchidos manualmente.
+ * Os placeholders ficam visíveis de propósito (ex: "[Substitua...]") pra
+ * não passarem despercebidos se você esquecer de trocar antes de publicar.
+ */
+const STORE_EXTRA_INFO = {
+  address: '[Substitua pelo endereço real da loja, ex: Rua Exemplo, 123 - Bairro, Porto Alegre - RS]',
+  hours: [
+    { label: 'Todos os dias 12:00 - 00:00, no mínimo...', value: '12:00 - 00:00' }
+  ],
+  instagramUrl: 'https://www.instagram.com/coffeeshopsativa/',
+  googleRatingText: '5.0',
+  googleReviewsUrl: 'https://www.google.com/search?sxsrf=APpeQnsUIymEI_FkPhbGTZBv5YN-l11xKQ:1785549486040&si=APenkKm7iecQ4G6P-TsbSMFKIQtv3EFIqRAFw-i8uEbk55Z-_30HkgY9k69M2gQQl615wFPMdNBcEmtnfijGDhVyz6S-PZHvk5nGZguh8Yw-CdEzbY6w7XPhQUFbJOnpKpIDAApnR_jPVuNltf9bRmLLQCAEuSR9SA%3D%3D&q=Sativa+CoffeeShop+Coment%C3%A1rios'
 };
 
 /**
@@ -563,11 +716,19 @@ const DOM = {
   headerSpacer: document.getElementById('header-spacer'),
   storeName: document.getElementById('store-name'),
   categoryFilters: document.getElementById('category-filters'),
+  filtersFadeLeft: document.getElementById('filters-fade-left'),
+  filtersFadeRight: document.getElementById('filters-fade-right'),
 
   searchInput: document.getElementById('search-input'),
   searchClearBtn: document.getElementById('search-clear-btn'),
 
+  themeToggleBtn: document.getElementById('theme-toggle-btn'),
+  themeIconSun: document.getElementById('theme-icon-sun'),
+  themeIconMoon: document.getElementById('theme-icon-moon'),
+
   loadingState: document.getElementById('loading-state'),
+  skeletonGrid: document.getElementById('skeleton-grid'),
+  skeletonCardTemplate: document.getElementById('skeleton-card-template'),
   errorState: document.getElementById('error-state'),
   errorMessage: document.getElementById('error-message'),
   catalogContent: document.getElementById('catalog-content'),
@@ -586,6 +747,17 @@ const DOM = {
   checkoutBtn: document.getElementById('checkout-btn'),
 
   whatsappFloatBtn: document.getElementById('whatsapp-float-btn'),
+  floatingCartBar: document.getElementById('floating-cart-bar'),
+  floatingCartQtyText: document.getElementById('floating-cart-qty-text'),
+  floatingCartSubtotalText: document.getElementById('floating-cart-subtotal-text'),
+
+  footerAddress: document.getElementById('footer-address'),
+  footerDirectionsBtn: document.getElementById('footer-directions-btn'),
+  footerHours: document.getElementById('footer-hours'),
+  footerRatingLink: document.getElementById('footer-rating-link'),
+  footerRatingText: document.getElementById('footer-rating-text'),
+  footerInstagram: document.getElementById('footer-instagram'),
+  footerYear: document.getElementById('footer-year'),
 
   toast: document.getElementById('toast'),
 
@@ -606,6 +778,27 @@ const Render = {
     // Botão flutuante: mensagem genérica de contato, diferente da mensagem de pedido do carrinho
     const greeting = encodeURIComponent(`Olá! Vim pelo catálogo digital da ${DB.storeInfo.name} e gostaria de tirar uma dúvida.`);
     DOM.whatsappFloatBtn.href = `https://wa.me/${DB.storeInfo.whatsappNumber}?text=${greeting}`;
+  },
+
+  /** Preenche o rodapé institucional a partir do STORE_EXTRA_INFO (dados fixos, não vêm da planilha) */
+  footer() {
+    DOM.footerAddress.textContent = STORE_EXTRA_INFO.address;
+    DOM.footerDirectionsBtn.href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(STORE_EXTRA_INFO.address)}`;
+
+    DOM.footerHours.innerHTML = '';
+    STORE_EXTRA_INFO.hours.forEach(entry => {
+      const li = document.createElement('li');
+      li.textContent = `${entry.label}: ${entry.value}`;
+      DOM.footerHours.appendChild(li);
+    });
+
+    DOM.footerRatingText.textContent = STORE_EXTRA_INFO.googleRatingText;
+    DOM.footerRatingLink.href = STORE_EXTRA_INFO.googleReviewsUrl;
+
+    DOM.footerInstagram.href = STORE_EXTRA_INFO.instagramUrl;
+    // DOM.footerFacebook.href = STORE_EXTRA_INFO.facebookUrl;
+
+    DOM.footerYear.textContent = new Date().getFullYear();
   },
 
   /** Gera os botões de filtro a partir de categories, incluindo o botão "Todos" */
@@ -629,12 +822,22 @@ const Render = {
     DB.categories.forEach(category => {
       DOM.categoryFilters.appendChild(buildButton(category.slug, category.name));
     });
+
+    // A lista de categorias mudou de tamanho: recalcula se o fade deve aparecer
+    Layout.updateFiltersFade();
   },
 
-  /** Estado 1: mostra o spinner de "Carregando catálogo..." e esconde os demais estados */
+  /** Preenche o grid de loading com N cards de skeleton (placeholder pulsante) */
+  buildSkeletons(count = 10) {
+    DOM.skeletonGrid.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      DOM.skeletonGrid.appendChild(DOM.skeletonCardTemplate.content.cloneNode(true));
+    }
+  },
+
+  /** Estado 1: mostra os skeletons e esconde os demais estados */
   showLoading() {
     DOM.loadingState.classList.remove('hidden');
-    DOM.loadingState.classList.add('flex');
     DOM.errorState.classList.add('hidden');
     DOM.errorState.classList.remove('flex');
     DOM.catalogContent.classList.add('hidden');
@@ -643,7 +846,6 @@ const Render = {
   /** Estado 2: as duas chamadas à API falharam ou uma delas deu erro */
   showError(message) {
     DOM.loadingState.classList.add('hidden');
-    DOM.loadingState.classList.remove('flex');
     DOM.errorState.classList.remove('hidden');
     DOM.errorState.classList.add('flex');
     DOM.catalogContent.classList.add('hidden');
@@ -653,7 +855,6 @@ const Render = {
   /** Estado 3: as duas chamadas retornaram com sucesso, catálogo pronto para ser exibido */
   showContent() {
     DOM.loadingState.classList.add('hidden');
-    DOM.loadingState.classList.remove('flex');
     DOM.errorState.classList.add('hidden');
     DOM.errorState.classList.remove('flex');
     DOM.catalogContent.classList.remove('hidden');
@@ -806,12 +1007,34 @@ const Render = {
     DOM.cartSubtotal.textContent = Utils.formatCurrency(subtotal);
   },
 
+  /**
+   * Mostra/esconde a barra flutuante "Ver carrinho" no rodapé da tela.
+   * Também desloca o botão flutuante do WhatsApp pra cima quando a barra
+   * aparece, pra eles não ficarem sobrepostos.
+   */
+  floatingCartBar() {
+    const totalQty = state.cart.reduce((sum, item) => sum + item.quantity, 0);
+    const hasItems = totalQty > 0;
+
+    DOM.floatingCartBar.classList.toggle('hidden', !hasItems);
+    DOM.floatingCartBar.classList.toggle('flex', hasItems);
+
+    if (hasItems) {
+      DOM.floatingCartQtyText.textContent = totalQty === 1 ? '1 item' : `${totalQty} itens`;
+      DOM.floatingCartSubtotalText.textContent = Utils.formatCurrency(Cart.getSubtotal());
+    }
+
+    DOM.whatsappFloatBtn.classList.toggle('bottom-5', !hasItems);
+    DOM.whatsappFloatBtn.classList.toggle('bottom-24', hasItems);
+  },
+
   /** Renderiza tudo relacionado ao carrinho de uma vez (evita repetição de chamadas) */
   cart() {
     Render.cartItems();
     Render.cartBadge();
     Render.cartSubtotal();
     Render.syncCartBadgesOnGrid(); // mantém os badges dos cards em dia
+    Render.floatingCartBar();
   },
 
   /** Exibe um toast simples de feedback por ~1.6s */
@@ -938,15 +1161,44 @@ const WhatsApp = {
 };
 
 /* --------------------------------------------------------------------------
-   8. LAYOUT — Ajustes de layout que dependem de medir o DOM em runtime
+   8. THEME — Dark mode: alterna a classe "dark" na <html> e persiste a
+      escolha no localStorage (a detecção inicial já roda inline no <head>,
+      antes do Tailwind carregar, pra evitar flash de tema errado).
+   -------------------------------------------------------------------------- */
+const Theme = {
+  STORAGE_KEY: 'sativa-theme',
+
+  /** Sincroniza o ícone (sol/lua) com o estado atual da classe "dark" */
+  init() {
+    Theme._updateIcon(document.documentElement.classList.contains('dark'));
+  },
+
+  /** Alterna entre claro/escuro e salva a preferência */
+  toggle() {
+    const isDark = document.documentElement.classList.toggle('dark');
+    try {
+      localStorage.setItem(Theme.STORAGE_KEY, isDark ? 'dark' : 'light');
+    } catch (error) {
+      // localStorage indisponível (ex: modo privado) — a escolha só não persiste entre sessões
+    }
+    Theme._updateIcon(isDark);
+  },
+
+  _updateIcon(isDark) {
+    DOM.themeIconSun.classList.toggle('hidden', isDark);
+    DOM.themeIconMoon.classList.toggle('hidden', !isDark);
+  }
+};
+
+/* --------------------------------------------------------------------------
+   9. LAYOUT — Ajustes de layout que dependem de medir/observar o DOM
    -------------------------------------------------------------------------- */
 const Layout = {
   /**
    * O header é "fixed", então o conteúdo abaixo dele precisa de um espaçador
    * com a mesma altura para não ficar escondido atrás dele. Em vez de fixar
-   * um valor de altura "no chute" (frágil — quebra se o header crescer, por
-   * exemplo com a barra de busca, categorias em 2 linhas em telas menores,
-   * fontes carregando de forma assíncrona etc), medimos a altura real do
+   * um valor "no chute" (frágil — quebra se o header crescer, por exemplo
+   * com categorias em 2 linhas em telas menores), medimos a altura real do
    * header e aplicamos no espaçador. Um ResizeObserver mantém isso sempre
    * sincronizado, inclusive em mudanças de orientação/tamanho de tela.
    */
@@ -957,17 +1209,35 @@ const Layout = {
 
   observeHeaderResize() {
     if (typeof ResizeObserver === 'undefined' || !DOM.header) {
-      // Fallback para navegadores sem ResizeObserver: recalcula pelo menos no resize da janela
       window.addEventListener('resize', Layout.syncHeaderSpacer);
       return;
     }
     const observer = new ResizeObserver(() => Layout.syncHeaderSpacer());
     observer.observe(DOM.header);
+  },
+
+  /**
+   * Mostra um gradiente de fade na esquerda/direita da barra de categorias
+   * apenas quando há conteúdo escondido para aquele lado — sinal visual de
+   * que dá para arrastar a lista horizontalmente.
+   */
+  updateFiltersFade() {
+    if (!DOM.categoryFilters) return;
+    const el = DOM.categoryFilters;
+    const scrollable = el.scrollWidth > el.clientWidth + 1;
+    const atStart = el.scrollLeft <= 1;
+    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+
+    DOM.filtersFadeLeft.classList.toggle('opacity-100', scrollable && !atStart);
+    DOM.filtersFadeLeft.classList.toggle('opacity-0', !scrollable || atStart);
+
+    DOM.filtersFadeRight.classList.toggle('opacity-100', scrollable && !atEnd);
+    DOM.filtersFadeRight.classList.toggle('opacity-0', !scrollable || atEnd);
   }
 };
 
 /* --------------------------------------------------------------------------
-   9. EVENTS — Listeners e delegação de eventos
+   10. EVENTS — Listeners e delegação de eventos
    -------------------------------------------------------------------------- */
 const Events = {
   bindAll() {
@@ -975,6 +1245,10 @@ const Events = {
     DOM.cartBtn.addEventListener('click', Cart.open);
     DOM.cartCloseBtn.addEventListener('click', Cart.close);
     DOM.cartOverlay.addEventListener('click', Cart.close);
+    DOM.floatingCartBar.addEventListener('click', Cart.open);
+
+    // Alternar tema claro/escuro
+    DOM.themeToggleBtn.addEventListener('click', Theme.toggle);
 
     // Delegação de evento nos filtros de categoria (evita bind individual por botão)
     DOM.categoryFilters.addEventListener('click', (event) => {
@@ -985,6 +1259,10 @@ const Events = {
       Render.highlightActiveFilter();
       Render.productsGrid();
     });
+
+    // Atualiza o fade da barra de categorias enquanto o usuário arrasta, e no resize da janela
+    DOM.categoryFilters.addEventListener('scroll', Layout.updateFiltersFade);
+    window.addEventListener('resize', Layout.updateFiltersFade);
 
     // Busca por nome do produto, com um pequeno debounce pra não re-renderizar a cada tecla
     let searchDebounceId = null;
@@ -1038,19 +1316,22 @@ const Events = {
 };
 
 /* --------------------------------------------------------------------------
-   10. INIT — Bootstrap da aplicação
+   11. INIT — Bootstrap da aplicação
    -------------------------------------------------------------------------- */
 async function init() {
-  // Dados fixos da loja (não vêm da planilha) e listeners podem ser montados de imediato
+  // Dados fixos (loja + rodapé) e listeners podem ser montados de imediato
   Render.storeHeader();
+  Render.footer();
   Render.cart();
+  Render.buildSkeletons();
   Events.bindAll();
+  Theme.init();
 
   // Sincroniza o espaçador do header agora e sempre que o header mudar de tamanho
   Layout.syncHeaderSpacer();
   Layout.observeHeaderResize();
 
-  // Mostra o loading e só libera a tela quando as DUAS requisições retornarem
+  // Mostra o loading (skeletons) e só libera a tela quando as DUAS requisições retornarem
   Render.showLoading();
 
   try {
