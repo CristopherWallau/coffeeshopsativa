@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { loadCatalog } from '../../application/use-cases/loadCatalog';
 import { isProductVisible } from '../../domain/entities/product';
-import { sheetDbCatalogRepository } from '../../infrastructure/repositories/sheetDbCatalogRepository';
+import { postgresCatalogRepository } from '../../infrastructure/repositories/postgresCatalogRepository';
 
 export function useCatalog() {
   const [status, setStatus] = useState('loading');
@@ -10,7 +10,7 @@ export function useCatalog() {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    loadCatalog(sheetDbCatalogRepository).then((data) => {
+    loadCatalog(postgresCatalogRepository).then((data) => {
       setCatalog(data); setStatus('success');
     }).catch(() => setStatus('error'));
   }, []);

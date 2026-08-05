@@ -27,3 +27,6 @@ body { margin: 0; font-family: Inter, system-ui, sans-serif; }
 .icon-button:hover { background: var(--color-brand-600); }
 .quantity-button { height: 1.5rem; width: 1.5rem; border-radius: 9999px; border: 1px solid var(--color-brand-200); background: transparent; color: var(--color-brand-700); cursor: pointer; }
 .dark .quantity-button { border-color: var(--color-brand-600); color: var(--color-brand-100); }
+.field-input { width: 100%; border: 1px solid var(--color-brand-200); border-radius: 0.75rem; background: white; padding: 0.75rem 0.875rem; color: var(--color-brand-900); outline: none; }
+.field-input:focus { border-color: var(--color-accent-500); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent-500) 18%, transparent); }
+.dark .field-input { border-color: var(--color-brand-600); background: var(--color-brand-900); color: var(--color-brand-50); }

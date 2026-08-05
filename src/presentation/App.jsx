@@ -3,11 +3,14 @@ import { createWhatsAppOrder } from '../application/use-cases/createWhatsAppOrde
 import { storeInfo } from '../config/store';
 import { formatCurrency } from '../shared/lib/formatters';
 import { CartDrawer } from './components/CartDrawer';
+import { AdminProductPage } from './components/AdminProductPage';
+import { AuthPage } from './components/AuthPage';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { CartIcon, WhatsAppIcon } from './components/Icon';
 import { ProductGrid, SkeletonGrid } from './components/ProductGrid';
 import { useCart } from './hooks/useCart';
+import { useAuth } from './hooks/useAuth';
 import { useCatalog } from './hooks/useCatalog';
 import { useTheme } from './hooks/useTheme';
 
@@ -15,15 +18,32 @@ export default function App() {
   const catalog = useCatalog();
   const cart = useCart();
   const theme = useTheme();
+  const auth = useAuth();
   const [isCartOpen, setCartOpen] = useState(false);
   const [toast, setToast] = useState('');
+  const getRoute = () => ({ '#admin': 'admin', '#login': 'login', '#register': 'register' }[window.location.hash] || 'catalog');
+  const [route, setRoute] = useState(getRoute);
 
+  useEffect(() => { const syncPage = () => setRoute(getRoute()); window.addEventListener('hashchange', syncPage); return () => window.removeEventListener('hashchange', syncPage); }, []);
   useEffect(() => { if (!toast) return undefined; const id = setTimeout(() => setToast(''), 1600); return () => clearTimeout(id); }, [toast]);
   useEffect(() => { document.body.style.overflow = isCartOpen ? 'hidden' : ''; return () => { document.body.style.overflow = ''; }; }, [isCartOpen]);
 
   const addProduct = (product) => { cart.add(product); setToast(`${product.name} adicionado!`); };
   const checkout = () => window.open(`https://wa.me/${storeInfo.whatsappNumber}?text=${encodeURIComponent(createWhatsAppOrder(cart.cart))}`, '_blank', 'noopener,noreferrer');
   const contactUrl = `https://wa.me/${storeInfo.whatsappNumber}?text=${encodeURIComponent(`Olá! Vim pelo catálogo digital da ${storeInfo.name} e gostaria de tirar uma dúvida.`)}`;
+
+  const loginAdmin = async (email, password) => {
+    const user = await auth.login(email, password);
+    if (user.role !== 'admin') { auth.logout(); throw new Error('Esta conta nao possui permissao de administrador.'); }
+    window.location.hash = 'admin';
+  };
+
+  if (route === 'login' || route === 'register') return <AuthPage mode={route === 'register' ? 'register' : 'login'} onLogin={loginAdmin} onRegister={auth.register} />;
+  if (route === 'admin') {
+    if (auth.status === 'loading') return <div className="flex min-h-screen items-center justify-center bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-100">Verificando sessao...</div>;
+    if (auth.user?.role !== 'admin') return <AuthPage mode="login" onLogin={loginAdmin} onRegister={auth.register} message="Entre com uma conta de administrador para acessar esta area." />;
+    return <AdminProductPage categories={catalog.categories} isDark={theme.isDark} onToggleTheme={theme.toggle} user={auth.user} onCreateProduct={auth.createProduct} onLoadProducts={auth.loadAdminProducts} onUpdateProduct={auth.updateProduct} onLogout={() => { auth.logout(); window.location.hash = 'login'; }} />;
+  }
 
   return <div className="min-h-screen bg-brand-50 pb-24 text-brand-900 transition-colors dark:bg-brand-900 dark:text-brand-50">
     <Header categories={catalog.categories} activeCategory={catalog.activeCategory} onCategoryChange={catalog.setActiveCategory} query={catalog.searchQuery} onQueryChange={catalog.setSearchQuery} cartQuantity={cart.quantity} onOpenCart={() => setCartOpen(true)} isDark={theme.isDark} onToggleTheme={theme.toggle} />
